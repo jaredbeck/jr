@@ -58,8 +58,8 @@ public class JRTree {
 				 sampleRate, 16, 2, 4, sampleRate, false);
 		
 		// Define nodes
-		JRGenerator sinewaveGenerator = new JRGenerator( JRGenerator.WAVEFORM_SINE );
-		JRController controller = new JRController();
+		JRGenerator sinewaveGenerator = new JRGenerator( JROscillator.WAVEFORM_SINE );
+		JRController controller = new JRController( JROscillator.WAVEFORM_HALF_SQUARE, 2.0F );
 		
 		// Construct tree
 		try {
@@ -70,15 +70,13 @@ public class JRTree {
 			System.exit(1);
 		}
 		JRTree t = new JRTree( sinewaveGenerator );
-			
 		
 		// Test traversals, writing to console
-		//t.dump();
+		// t.dump();
 		
-		// Test autio output
+		// Acquire, open, and start a Line
 		SourceDataLine line = null;
 		DataLine.Info	info = new DataLine.Info( SourceDataLine.class, audioFormat );
-		
 		try
 		{
 			line = (SourceDataLine) AudioSystem.getLine(info);
@@ -95,11 +93,13 @@ public class JRTree {
 			System.exit(1);
 		}
 		line.start();
-
 		//System.out.println( "Line started .." );
 
+		// arbitrarily sized buffer
 		int	BUFFER_SIZE = 128000;
 		byte[] abData = new byte[BUFFER_SIZE];
+		
+		// try to read from the head node
 		while (true)
 		{
 			int	nRead = -1;
@@ -108,8 +108,32 @@ public class JRTree {
 				e.printStackTrace(); 
 				System.exit(1);
 			}			
+
+			// -1 indicates end of input
 			if (nRead == -1) { break; }
-			else { int	nWritten = line.write(abData, 0, nRead); }
+			
+			// otherwise, try to process the input and write to the line
+			else {
+
+				// Assertion: assuming 16bit sample size (two bytes) we can assert an even length buffer
+				if (nRead % 2 != 0) { 	
+					System.err.println("Assertion failed: odd length buffer"); 
+					System.exit(1);
+				}
+			
+				//System.out.println(nRead + " read from head");
+			
+				// swap byte order to little endian, because Jared's hardware is little endian
+				for ( int i = 0; i < nRead; i += 2) {
+					byte mostSigByte = abData[i];
+					abData[i] = abData[i+1];
+					abData[i+1] = mostSigByte;
+				}
+				
+				// write to the line
+				int	nWritten = line.write(abData, 0, nRead); 
+				//System.out.println(nWritten + " written to line");
+			}
 		}
 	}
 

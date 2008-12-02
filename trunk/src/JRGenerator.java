@@ -3,11 +3,6 @@ import javax.sound.sampled.*;
 
 public class JRGenerator extends JRNode {
 
-	public static final int WAVEFORM_SINE = 0;
-	public static final int WAVEFORM_SQUARE = 1;
-	public static final int WAVEFORM_TRIANGLE = 2;
-	public static final int WAVEFORM_SAWTOOTH = 3;
-
 	private int waveform;
 	private AudioInputStream oscillator;
 	
@@ -21,7 +16,7 @@ public class JRGenerator extends JRNode {
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		
 		// initialize oscillator
-		this.oscillator = new Oscillator( 
+		this.oscillator = new JROscillator( 
 			waveform, frequency, amplitude, this.audioFormat, lengthInFrames);
 	}
 	
@@ -82,43 +77,40 @@ public class JRGenerator extends JRNode {
 			int nRead = oscillator.read(b1, nOffset, nLength);
 			int nReadCtrl = c.read(b2, nOffset, nRead); // nRead? nLength?
 
-			// sanity check
+			// assertion: equal signal read length
 			if (nRead != nReadCtrl) { 
-				throw new IOException ( "Controller signal read (" + nReadCtrl + ") and generator signal read (" + nRead + ") were not the same length" ); 
+				throw new IOException ( "Assertion failed: Controller signal read (" + nReadCtrl + ") and generator signal read (" + nRead + ") were not the same length" ); 
+			}
+			
+			// assertion: frame size is four bytes
+			if (nRead % 4 != 0) {
+				throw new IOException ( "Assertion failed: invalid number of bytes read (" + nRead + ")" ); 
 			}
 			
 			// itterate over signal one frame at a time
 			for (int i = 0; i < nRead; i = i + 4) {
 
-				// data comes in 16 bit stereo, little endian
-				// except we assume that both channels are the same,
-				// so we only process one
-				byte b1_channel1_lessSig = b1[i];
-				byte b1_channel1_moreSig = b1[i+1];
-				//byte b1_channel2_lessSig = b1[i+2];
-				//byte b1_channel2_moreSig = b1[i+3];
-				byte b2_channel1_lessSig = b2[i];
-				byte b2_channel1_moreSig = b2[i+1];
-				//byte b2_channel2_lessSig = b2[i+2];
-				//byte b2_channel2_moreSig = b2[i+3];
+				// assume that data comes in 16 bit stereo, big endian
+				// assume both channels are the same, so we only process one
+				// bytes three and four are discarded
+				int generatorSample = (b1[i] << 8) | (b1[i+1] & 0xFF);
+				int controllerSample = (b2[i] << 8) | (b2[i+1] & 0xFF);
 				
-				int b1_channel1_value = (b1_channel1_moreSig * 256) + b1_channel1_lessSig;
-				//System.out.println(b1_channel1_moreSig + " * 256 + " + b1_channel1_lessSig + " = " + b1_channel1_value);
-				//int b1_channel2_value = (b1_channel2_moreSig * 256) + b1_channel2_lessSig;
-				int b2_channel1_value = (b2_channel1_moreSig * 256) + b2_channel1_lessSig;
-				//System.out.println(b2_channel1_moreSig + " * 256 + " + b2_channel1_lessSig + " = " + b2_channel1_value);
-				//int b2_channel2_value = (b2_channel2_moreSig * 256) + b2_channel2_lessSig;
+				// normalize the controller sample to a range from -1.0 to 1.0
+				float controllerSampleNormalized = controllerSample / 32768.0F;
 				
-				// all that so I can do big endian math
-				int result_channel1 = (int)(b1_channel1_value * (float)(b2_channel1_value / 32768.0F));
-				//System.out.println(b1_channel1_value + " * " + b2_channel1_value + " / 32768.0F = " + result_channel1);
-				//int result_channel2 = b1_channel2_value * b2_channel2_value;
+				// calculate result
+				int resultSample = Math.round(generatorSample * controllerSampleNormalized);
+				//System.out.println("g = " + generatorSample + " c = " + controllerSample + " cn = " + controllerSampleNormalized + " r = " + resultSample);
 				
-				// now return it to little endian!
-				abData[i + 0] = (byte) (result_channel1 & 0xFF);
-				abData[i + 1] = (byte) ((result_channel1 >>> 8) & 0xFF);
-				abData[i + 2] = (byte) (result_channel1 & 0xFF);
-				abData[i + 3] = (byte) ((result_channel1 >>> 8) & 0xFF);
+				// assign the result to the left channel of this frame 
+				// in the provided big-endian result buffer
+				abData[i+0] = (byte) ((resultSample >>> 8) & 0xFF);
+				abData[i+1] = (byte) (resultSample & 0xFF);
+			
+				// assume the right channel is the same as the left
+				abData[i+2] = abData[i];
+				abData[i+3] = abData[i+1];
 				
 				}
 				
@@ -134,10 +126,10 @@ public class JRGenerator extends JRNode {
 	public String toString ( ) {
 		String r;
 		switch ( this.waveform ) {
-			case JRGenerator.WAVEFORM_SINE : r = "Sinewave Generator"; break;
-			case JRGenerator.WAVEFORM_SQUARE : r = "Squarewave Generator"; break;
-			case JRGenerator.WAVEFORM_TRIANGLE : r = "Triangle Generator"; break;
-			case JRGenerator.WAVEFORM_SAWTOOTH : r = "Sawtooth Generator"; break;
+			case JROscillator.WAVEFORM_SINE : r = "Sinewave Generator"; break;
+			case JROscillator.WAVEFORM_SQUARE : r = "Squarewave Generator"; break;
+			case JROscillator.WAVEFORM_TRIANGLE : r = "Triangle Generator"; break;
+			case JROscillator.WAVEFORM_SAWTOOTH : r = "Sawtooth Generator"; break;
 			default : r = "Generator";
 		}
 		return r;

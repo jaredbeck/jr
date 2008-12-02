@@ -2,23 +2,33 @@ import java.io.*;
 import javax.sound.sampled.*;
 
 public class JRController extends JRNode {
+	
+	private static final float defaultAmplitude = 0.9F;
+	private static final float defaultFrequency = 2.0F; // the range 0.5 to 4 is most useful
 
-	private Oscillator oscillator;
+	private AudioInputStream oscillator;
 
-	public JRController (  ) {
-		super();
-		
-		// define waveform properties
-		int waveform = JRGenerator.WAVEFORM_TRIANGLE;
-		float	amplitude = 0.9F;
-		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
-		float	frequency = 2.0F;  // the range 0.5 to 4 is most useful
-		
-		// initialize oscillator
-		this.oscillator = new Oscillator( 
-			waveform, frequency, amplitude, this.audioFormat, lengthInFrames);
+	// Convenience constructors
+	public JRController ( ) { 
+		this( JROscillator.WAVEFORM_HALF_SQUARE, defaultAmplitude, defaultFrequency ); 
+	}
+	
+	public JRController ( int waveform ) { 
+		this( waveform, defaultAmplitude, defaultFrequency ); 
+	}
+	
+	public JRController ( int waveform, float frequency ) { 
+		this( waveform, defaultAmplitude, frequency ); 
 	}
 
+	// Main constructor
+	public JRController ( int waveform, float amplitude, float frequency ) {
+		super();
+		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
+		this.oscillator = new JROscillator( 
+			waveform, frequency, amplitude, this.audioFormat, lengthInFrames);
+	}
+	
 	public int read(byte[] abData, int nOffset, int nLength) throws IOException {
 		if ( this.getDegree() == 0 ) { 
 			return oscillator.read(abData, nOffset, nLength); 

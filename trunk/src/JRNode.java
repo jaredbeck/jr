@@ -10,7 +10,7 @@ public class JRNode extends AudioInputStream {
 	private static final int channels = 2;
 	private static final int frameSizeInBytes = 4;
 	private static final float frameRate = 44100.0F;
-	private static final boolean bigEndian = false;
+	private static final boolean bigEndian = true;
 	
 	protected JRNode parent;
 	protected Vector<JRNode> children;

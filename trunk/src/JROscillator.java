@@ -1,41 +1,3 @@
-/*
- *	Oscillator.java
- *
- *	This file is part of jsresources.org
- */
-
-/*
- * Copyright (c) 1999 - 2001 by Matthias Pfisterer
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in the
- *   documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
-|<---            this code is formatted to fit into 80 columns             --->|
-*/
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
@@ -47,22 +9,23 @@ import javax.sound.sampled.SourceDataLine;
 
 
 
-public class Oscillator
+public class JROscillator
 	extends AudioInputStream
 {
 	private static final boolean	DEBUG = false;
 
-	public static final int		WAVEFORM_SINE = 0;
-	public static final int		WAVEFORM_SQUARE = 1;
-	public static final int		WAVEFORM_TRIANGLE = 2;
-	public static final int		WAVEFORM_SAWTOOTH = 3;
+	public static final int WAVEFORM_SINE = 0;
+	public static final int WAVEFORM_SQUARE = 1;
+	public static final int WAVEFORM_TRIANGLE = 2;
+	public static final int WAVEFORM_SAWTOOTH = 3;
+	public static final int WAVEFORM_HALF_SQUARE = 4;
 
 	private byte[]			m_abData;
 	private int			m_nBufferPosition;
 	private long			m_lRemainingFrames;
 
 
-	public Oscillator(int nWaveformType,
+	public JROscillator(int nWaveformType,
 			  float fSignalFrequency,
 			  float fAmplitude,
 			  AudioFormat audioFormat,
@@ -103,7 +66,10 @@ public class Oscillator
 
 			case WAVEFORM_SQUARE:
 				fValue = (fPeriodPosition < 0.5F) ? 1.0F : -1.0F;
-				//System.out.println(fPeriodPosition + " " + fValue);
+				break;
+			
+			case WAVEFORM_HALF_SQUARE:
+				fValue = (fPeriodPosition < 0.5F) ? 1.0F : 0.0F;
 				break;
 
 			case WAVEFORM_TRIANGLE:
@@ -135,11 +101,23 @@ public class Oscillator
 			int	nValue = Math.round(fValue * fAmplitude);
 			//System.out.println(fValue + " * " + fAmplitude + " = " + nValue);
 			int nBaseAddr = (nFrame) * getFormat().getFrameSize();
-			// this is for 16 bit stereo, little endian
-			m_abData[nBaseAddr + 0] = (byte) (nValue & 0xFF);
-			m_abData[nBaseAddr + 1] = (byte) ((nValue >>> 8) & 0xFF);
-			m_abData[nBaseAddr + 2] = (byte) (nValue & 0xFF);
-			m_abData[nBaseAddr + 3] = (byte) ((nValue >>> 8) & 0xFF);
+			
+			// Write to buffer as:
+			// 16 bit stereo, big endian
+			if ( audioFormat.isBigEndian() ) {
+				m_abData[nBaseAddr + 0] = (byte) ((nValue >>> 8) & 0xFF);
+				m_abData[nBaseAddr + 1] = (byte) (nValue & 0xFF);
+				m_abData[nBaseAddr + 2] = (byte) ((nValue >>> 8) & 0xFF);
+				m_abData[nBaseAddr + 3] = (byte) (nValue & 0xFF);
+			}
+			// 16 bit stereo, little endian
+			else {
+				m_abData[nBaseAddr + 0] = (byte) (nValue & 0xFF);
+				m_abData[nBaseAddr + 1] = (byte) ((nValue >>> 8) & 0xFF);
+				m_abData[nBaseAddr + 2] = (byte) (nValue & 0xFF);
+				m_abData[nBaseAddr + 3] = (byte) ((nValue >>> 8) & 0xFF);
+			}
+			
 			//System.out.println(nValue + " = " + (byte) (nValue & 0xFF) + " " + (byte) ((nValue >>> 8) & 0xFF) );
 		}
 		m_nBufferPosition = 0;
@@ -257,7 +235,4 @@ public class Oscillator
 	}
 }
 
-
-
-/*** Oscillator.java ***/
 
