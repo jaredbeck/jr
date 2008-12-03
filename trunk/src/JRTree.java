@@ -29,7 +29,7 @@ public class JRTree {
 		
 		// recursion logic
 		if ( n.getDegree() > 0 ) {
-			Iterator i = n.getChildren();
+			Iterator i = n.getChildIterator();
 			while ( i.hasNext() ) {
 				dump( (JRNode)i.next(), level + 1, order );
 			}
@@ -59,14 +59,23 @@ public class JRTree {
 		
 		// Define nodes
 		JRGenerator sinewaveGenerator = new JRGenerator( JROscillator.WAVEFORM_SINE );
-		JRController controller = new JRController( JROscillator.WAVEFORM_HALF_SQUARE, 2.0F );
+		JRGenerator squarewaveGenerator = new JRGenerator( JROscillator.WAVEFORM_SQUARE );
+		JRGenerator triangleGenerator = new JRGenerator( JROscillator.WAVEFORM_TRIANGLE );
+		JRGenerator sawtoothGenerator = new JRGenerator( JROscillator.WAVEFORM_SAWTOOTH );
+		JRController controller = new JRController( JROscillator.WAVEFORM_SINE, 16.0F, 0.9F );
+		JRController controller2 = new JRController( JROscillator.WAVEFORM_SINE, 8.0F, 0.9F );
+		JRController controller3 = new JRController( JROscillator.WAVEFORM_SINE, 2.0F, 0.9F );
+		JRController controller4 = new JRController( JROscillator.WAVEFORM_SINE, 0.5F, 0.9F );
 		
 		// Construct tree
 		try {
 			sinewaveGenerator.addChild( controller );
+			sinewaveGenerator.addChild( controller2 );
+			sinewaveGenerator.addChild( controller3 );
+			sinewaveGenerator.addChild( controller4 );
 		}
 		catch (JRInvalidEdgeException e) {
-			System.err.println(e.getMessage());
+			e.printStackTrace();
 			System.exit(1);
 		}
 		JRTree t = new JRTree( sinewaveGenerator );
@@ -96,12 +105,13 @@ public class JRTree {
 		//System.out.println( "Line started .." );
 
 		// arbitrarily sized buffer
-		int	BUFFER_SIZE = 128000;
+		int	BUFFER_SIZE = 64000;
 		byte[] abData = new byte[BUFFER_SIZE];
 		
-		// try to read from the head node
-		while (true)
-		{
+		// while (true) {
+		for (int cycle = 1; cycle < 15; cycle++) {
+		
+			// try to read from the head node
 			int	nRead = -1;
 			try { nRead = t.getHead().read(abData); }
 			catch (Exception e) { 
@@ -135,6 +145,10 @@ public class JRTree {
 				//System.out.println(nWritten + " written to line");
 			}
 		}
+		
+		line.flush();
+		line.close();
+		System.exit(0);
 	}
 
 }

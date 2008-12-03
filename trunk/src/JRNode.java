@@ -4,6 +4,8 @@ import javax.sound.sampled.*;
 
 public class JRNode extends AudioInputStream {
 	
+	private static final int maximumDegree = 6;
+	
 	// Define audio format
 	private static final float sampleRate = 44100.0F;
 	private static final int sampleSizeInBits = 16;
@@ -36,6 +38,9 @@ public class JRNode extends AudioInputStream {
 	}
 	
 	public void addChild ( JRNode child ) throws JRInvalidEdgeException {
+		if ( this.getDegree() >= this.getMaximumDegree() ) {
+			throw new JRInvalidEdgeException("Too many child nodes");
+		}
 		child.setParent( this );
 		children.add(child);
 	}
@@ -44,7 +49,7 @@ public class JRNode extends AudioInputStream {
 		children.clear();
 	}
 
-	public Iterator getChildren ( ) {
+	public Iterator getChildIterator ( ) {
 		return children.iterator();
 	}
 	
@@ -59,6 +64,10 @@ public class JRNode extends AudioInputStream {
 	public int getLevel ( ) {
 		if (parent == null) { return 1; }
 		else { return parent.getLevel() + 1; }
+	}
+	
+	public int getMaximumDegree ( ) {
+		return JRNode.maximumDegree;
 	}
 	
 	public boolean remove ( JRNode n ) {

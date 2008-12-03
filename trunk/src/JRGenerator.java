@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.*;
 import javax.sound.sampled.*;
 
 public class JRGenerator extends JRNode {
@@ -11,7 +12,7 @@ public class JRGenerator extends JRNode {
 		
 		// define waveform properties
 		this.waveform = waveform;
-		float	frequency = 600.0F;
+		float	frequency = 550.0F;
 		float	amplitude = 0.7F;
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		
@@ -21,18 +22,25 @@ public class JRGenerator extends JRNode {
 	}
 	
 	public void addChild ( JRNode child ) throws JRInvalidEdgeException {
-		// Generators have only one input, a control input
-		// So, if the child is not a Controller, we throw an exception
+		// Overall maximum degree check
+		if ( this.getDegree() >= this.getMaximumDegree() ) {
+			throw new JRInvalidEdgeException("Too many child nodes");
+		}
+	
+		// Generators only accept control inputs
+		// So, if the child is not a Controller, we throw a JRInvalidEdgeException
 		JRController controller = null;
 		try { controller = (JRController)child; }
 		catch ( ClassCastException e ) { 
 			throw new JRInvalidEdgeException( "JRGenerator only accepts JRController as children" ); 
 		}
 		
+		/*		
 		// For now, only support one control input
 		if ( this.getDegree() > 0 ) {
 			throw new JRInvalidEdgeException( "So far, Generators only support one control input" ); 
 		}
+		*/
 		
 		// Add child
 		child.setParent( this );
@@ -70,11 +78,15 @@ public class JRGenerator extends JRNode {
 		
 		// One controller
 		else if ( this.getDegree() == 1 ) {
-			//System.out.println("Trying to mix controller signal and generator signal ..");
-			JRController c = (JRController)this.getFirstChild();
+
+			// read from oscillator
 			byte[] b1 = new byte[nLength];
-			byte[] b2 = new byte[nLength];
 			int nRead = oscillator.read(b1, nOffset, nLength);
+			//System.out.println( "Read " + nRead + " bytes from oscillator" );
+			
+			// read from controller
+			byte[] b2 = new byte[nRead];
+			JRController c = (JRController)this.getFirstChild();
 			int nReadCtrl = c.read(b2, nOffset, nRead); // nRead? nLength?
 
 			// assertion: equal signal read length
@@ -90,9 +102,9 @@ public class JRGenerator extends JRNode {
 			// itterate over signal one frame at a time
 			for (int i = 0; i < nRead; i = i + 4) {
 
-				// assume that data comes in 16 bit stereo, big endian
-				// assume both channels are the same, so we only process one
-				// bytes three and four are discarded
+				/* Assume that data comes in 16 bit stereo, big endian.
+				Assume both channels are the same, so we only process one channel. 
+				Thus, bytes three and four are discarded */
 				int generatorSample = (b1[i] << 8) | (b1[i+1] & 0xFF);
 				int controllerSample = (b2[i] << 8) | (b2[i+1] & 0xFF);
 				
@@ -117,8 +129,64 @@ public class JRGenerator extends JRNode {
 			//System.out.println("Done mixing controller signal and generator signal");
 			return nRead;
 		}
+		
 		else { 
-			throw new IOException("JRGenerator.read(byte[], int, int) is unsupported when degree > 1"); 
+			//throw new IOException("JRGenerator.read(byte[], int, int) is unsupported when degree > 1"); 
+			
+			// read from oscillator
+			byte[] oscillatorData = new byte[nLength];
+			int nRead = oscillator.read(oscillatorData, nOffset, nLength);
+			
+			/* Read from controllers.  This could be a very big buffer.
+			size in bytes = nRead * (JRNode.maximumDegree + 1)
+			given a nRead of 64kb the max size is 437kb
+			I guess that is a reasonable size.  It could be cut in half again by 
+			reducing the controller signal to one channel */
+			byte[][] controllerData = new byte[this.getDegree()][nRead];
+			Iterator childIterator = this.getChildIterator();
+			int ci = 0;
+			while ( childIterator.hasNext() ) {
+				JRController c = (JRController) childIterator.next();			
+				int nReadCtrl = c.read(controllerData[ci], nOffset, nRead);
+				ci++;
+				if ( nReadCtrl != nRead ) { throw new IOException("read length mismatch"); }
+			}
+			
+			/* Itterate over oscillator data, multiplying each oscillator sample
+			by each corresponding control sample.  Even if we use single channel 
+			control signals, this step is computationally expensive, 
+			requiring (degree * (nRead / 2)) multiplications.  With a maximum 
+			degree of 6, and a nRead of 64000, that's 192000 multiplications! */
+			for (int i = 0; i < nRead; i = i + 4) {
+				int resultSample = 0;
+			
+				/* Assume that data comes in 16 bit stereo, big endian.
+				Assume both channels are the same, so we only process one channel. 
+				Thus, bytes three and four are discarded */
+				int generatorSample = (oscillatorData[i] << 8) | (oscillatorData[i+1] & 0xFF);
+				resultSample = generatorSample;
+				
+				// For each controller
+				for (ci = 0; ci < this.getDegree(); ci ++) {
+					int controllerSample = (controllerData[ci][i] << 8) | (controllerData[ci][i+1] & 0xFF);
+				
+					// normalize the controller sample to a range from -1.0 to 1.0
+					float controllerSampleNormalized = controllerSample / 32768.0F;
+				
+					resultSample *= controllerSampleNormalized;
+				}
+			
+				// Assign the result to the left channel of 
+				// this frame in the provided big-endian result buffer
+				abData[i+0] = (byte) ((resultSample >>> 8) & 0xFF);
+				abData[i+1] = (byte) (resultSample & 0xFF);
+			
+				// assume the right channel is the same as the left
+				abData[i+2] = abData[i];
+				abData[i+3] = abData[i+1];
+			}
+			
+			return nRead;
 		}
 	}
 	

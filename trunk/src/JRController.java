@@ -3,26 +3,26 @@ import javax.sound.sampled.*;
 
 public class JRController extends JRNode {
 	
-	private static final float defaultAmplitude = 0.9F;
-	private static final float defaultFrequency = 2.0F; // the range 0.5 to 4 is most useful
+	private static final float defaultAmplitude = 0.7F;
+	private static final float defaultFrequency = 2.0F; // the range 0.5 to 8 is most useful
 
 	private AudioInputStream oscillator;
 
 	// Convenience constructors
 	public JRController ( ) { 
-		this( JROscillator.WAVEFORM_HALF_SQUARE, defaultAmplitude, defaultFrequency ); 
+		this( JROscillator.WAVEFORM_HALF_SQUARE, defaultFrequency, defaultAmplitude ); 
 	}
 	
 	public JRController ( int waveform ) { 
-		this( waveform, defaultAmplitude, defaultFrequency ); 
+		this( waveform, defaultFrequency, defaultAmplitude ); 
 	}
 	
 	public JRController ( int waveform, float frequency ) { 
-		this( waveform, defaultAmplitude, frequency ); 
+		this( waveform, frequency, defaultAmplitude ); 
 	}
 
 	// Main constructor
-	public JRController ( int waveform, float amplitude, float frequency ) {
+	public JRController ( int waveform, float frequency, float amplitude ) {
 		super();
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		this.oscillator = new JROscillator( 
