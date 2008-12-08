@@ -1,0 +1,98 @@
+vendors
+
+newegg
+cdw
+pcmall
+http://www.1394store.com/eshop/dept.asp?dept_id=51
+
+--------------------------------------------------------------------------------
+
+http://reactable.iua.upf.edu/?software
+
+The reacTIVision application is available for the following operating
+systems: Windows, MacOS X and Linux. Under Windows it supports any
+camera with a proper WDM driver, such as USB, USB2, FireWire and DV
+cameras. Equally under MacOS X all FireWire cameras and any camera
+supported by QuickTime will work in reacTIVision. Under Linux, FireWire
+cameras are best supported, as well as a few Video4Linux and
+Video4Linux2 USB cameras. 
+
+illumination
+
+For the tracking, the objects need to be properly illuminated, so the
+camera and thus the computer vision application can see them correctly.
+For the projection onto a table, the surface needs to be dark though, so
+the user can see the projected image well enough. Since these two
+necessary steps logically exclude each other, the solution is to operate
+in two different spectra: The projection has to be visible to the user,
+so the computer vision component needs to operate in a different,
+invisible spectrum such as infrared. Most CCD cameras are perfectly
+sensitive within the near IR spectrum, therefore infrared LED lamps can
+be used to illuminate the table. All light from the visible spectrum
+needs to be filtered in the camera, so the computer vision algorithm is
+not disturbed by the projection. Eventually an existing infrared blocker
+needs to be removed from the camera sensor. 
+
+camera
+
+In general cameras with CCD sensors should perform better than those
+with a CMOS chip. Additionally you should make sure that the camera has
+an acceptable lens. These two criterias basically exclude cameras below
+the 50$ range. DV cameras supporting full-frame mode are suitable, while
+those with interlaced mode only, will not work at all. For lowest
+latency and best performance we recommend firewire cameras from the top
+range, such as industrial cameras with a high framerate, resolution and
+sensor size. These cameras usually also come with high quality lenses.
+Cheaper firewire cameras, such as the unibrain fire-i also allow
+optional wide-angle lenses. 
+
+--------------------------------------------------------------------------------
+
+http://www.macworld.com/article/27783/2003/12/firewirewebcams.html
+
+FireWire Web Cams
+Apple's iSight Goes Up Against Established Products
+by Matthew Honan, Macworld.com 
+Dec 1, 2003 3:00 am
+
+Unibrain Fire-i
+Great in low-light; compact; additional FireWire port.
+Mediocre color accuracy and picture quality.
+$99
+
+Orange Micro iBot Standard
+Great picture quality.
+Bulky; hard to position at eye-level; poor OS X software bundle.
+$99
+
+ADS Technologies Pyro 1394 WebCam
+Great picture quality; best software bundle.
+Bulky; hard to position at eye-level.
+$109
+
+Apple Computer iSight
+Excellent picture quality; built-in mike; fantastic industrial design; best for “face-to-face” chatting.
+Performs poorly in low-light; no additional software.
+$149
+
+--------------------------------------------------------------------------------
+
+http://webcam-osx.sourceforge.net/cameras/index.php
+
+Database of USB webcams and cameras.  Now 381 of these cameras are
+supported using the macam driver!
+
+--------------------------------------------------------------------------------
+
+http://share.skype.com/sites/mac/2007/02/webcams_for_skype_for_mac.html
+
+Webcams for Skype for Mac
+February 16, 2007
+
+Apple iSight, Philips SPC900NC and Logitech QuickCam Pro 4000 are
+pretty safe bets. Loads of other cameras work as well as long as you've
+downloaded a driver from http://webcam-osx.sourceforge.net. See the list
+of cameras that work (and those that don't) with Macs.
+
+--------------------------------------------------------------------------------
+

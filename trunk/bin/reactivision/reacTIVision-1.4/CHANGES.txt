@@ -1,0 +1,26 @@
+reacTIVision 1.4pre2
+--------------------
+* all settings are now saved correctly to reacTIVision.xml on exit
+* reacTIVision exits securely when killed by a signal (on unix and mac)
+* fixes and improvements for the handling of different tree spaces
+* many minor bug fixes and improvements
+
+reacTIVision 1.4pre1
+--------------------
+
+* added finger blob tracking
+* removed obsolete finger fiducial
+* improved and more robust fiducial tracking
+* improved set of fiducials (smaller footprint & improved rendering)
+* improved calibration precision
+* improved firewire camera support and configuration on mac and linux
+* on-screen and XML configuration instead of command line options
+* added MIDI channel selection for note ON events
+* many minor bug fixes and improvements
+
+features to be finished for 1.4 final
+-------------------------------------
+
+* semi automatic calibration procedure
+* increased standard set of 120x2 fiducials
+* additional set of 12x2 fiducials with smaller footprint
