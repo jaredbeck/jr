@@ -11,19 +11,42 @@ public class JRConnectionManager implements TuioListener {
 	}
 	
 	public void addTuioObject(TuioObject tobj) {
-		objectList.put ( tobj.getSessionID(), new JRTuioObject(tobj) );
-		System.out.println("add obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle());	
+		int fiducialID = tobj.getFiducialID();
+		long sessionID = tobj.getSessionID();
+	
+		// update object list
+		objectList.put ( sessionID, new JRTuioObject(tobj) );
+		
+		System.out.println("add obj "+fiducialID+" ("+sessionID+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle());	
+		// if the tree has no head, set head
+		if ( jrTree.getHead() == null ) {
+			try { jrTree.setHead( JRNode.getInstance ( fiducialID ) ); }
+			catch (JRException e) { System.err.println(e.getMessage()); }
+		}
+		else {
+			// recreate tree based on proximity rules
+			System.out.println("recreate tree based on proximity rules");
+		}
 	}
 
 	public void updateTuioObject(TuioObject tobj) {
 		JRTuioObject demo = (JRTuioObject)objectList.get(tobj.getSessionID());
 		demo.update(tobj);
-		System.out.println("set obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle()+" "+tobj.getMotionSpeed()+" "+tobj.getRotationSpeed()+" "+tobj.getMotionAccel()+" "+tobj.getRotationAccel()); 	
+		System.out.println("set obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle()+" "+tobj.getMotionSpeed()+" "+tobj.getRotationSpeed()+" "+tobj.getMotionAccel()+" "+tobj.getRotationAccel());
+		// update the properties of the appropriate node in the tree (use mutators)
+		// acquire reference to JRNode by either:
+			// 1. traverse the tree looking for a session id (but traversal is cpu expensive)
+			// 2. keep a reference to each node in this connection manager
 	}
 	
 	public void removeTuioObject(TuioObject tobj) {
 		objectList.remove(tobj.getSessionID());
-		System.out.println("del obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+")");	
+		System.out.println("del obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+")");
+		// if there is no corresponding node in the tree
+			// throw an exception
+		// else
+			// recreate tree based on proximity rules
+			System.out.println("recreate tree based on proximity rules");
 	}
 
 	public void addTuioCursor(TuioCursor tcur) {

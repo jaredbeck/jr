@@ -61,6 +61,36 @@ public class JRNode extends AudioInputStream {
 		return children.firstElement();
 	}
 	
+	public static JRNode getInstance ( int fiducialID ) throws JRException {
+		if ( fiducialID == 1 ) {
+			return new JRGenerator( JROscillator.WAVEFORM_SINE );
+		}
+		else if ( fiducialID == 2 ) {
+			return new JRGenerator( JROscillator.WAVEFORM_SQUARE );
+		}
+		else if ( fiducialID == 3 ) {
+			return new JRGenerator( JROscillator.WAVEFORM_SAWTOOTH );
+		}
+		else if ( fiducialID == 4 ) {
+			return new JRGenerator( JROscillator.WAVEFORM_TRIANGLE );
+		}
+		else if ( fiducialID == 5 ) {
+			return new JRController( JROscillator.WAVEFORM_SINE );
+		}
+		else if ( fiducialID == 6 ) {
+			return new JRController( JROscillator.WAVEFORM_HALF_SQUARE );
+		}
+		else if ( fiducialID == 7 ) {
+			return new JRController( JROscillator.WAVEFORM_SAWTOOTH );
+		}
+		else if ( fiducialID == 8 ) {
+			return new JRController( JROscillator.WAVEFORM_TRIANGLE );
+		}
+		else {
+			throw new JRException( "Unknown fiducial ID in JRNode.getInstance()" );
+		}
+	}
+	
 	public int getLevel ( ) {
 		if (parent == null) { return 1; }
 		else { return parent.getLevel() + 1; }
