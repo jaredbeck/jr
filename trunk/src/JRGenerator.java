@@ -22,11 +22,7 @@ public class JRGenerator extends JRNode {
 	}
 	
 	public void addChild ( JRNode child ) throws JRInvalidEdgeException {
-		// Overall maximum degree check
-		if ( this.getDegree() >= this.getMaximumDegree() ) {
-			throw new JRInvalidEdgeException("Too many child nodes");
-		}
-	
+		
 		// Generators only accept control inputs
 		// So, if the child is not a Controller, we throw a JRInvalidEdgeException
 		JRController controller = null;
@@ -35,16 +31,7 @@ public class JRGenerator extends JRNode {
 			throw new JRInvalidEdgeException( "JRGenerator only accepts JRController as children" ); 
 		}
 		
-		/*		
-		// For now, only support one control input
-		if ( this.getDegree() > 0 ) {
-			throw new JRInvalidEdgeException( "So far, Generators only support one control input" ); 
-		}
-		*/
-		
-		// Add child
-		child.setParent( this );
-		children.add( child );
+		super.addChild( child );
 	}
 
 

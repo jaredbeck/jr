@@ -17,6 +17,7 @@ public abstract class JRNode extends AudioInputStream {
 	protected JRNode parent;
 	protected Vector<JRNode> children;
 	protected AudioFormat audioFormat;
+	protected boolean isOutputSatisfied;
 	
 	private long sessionID;
 	
@@ -37,13 +38,22 @@ public abstract class JRNode extends AudioInputStream {
 		      AudioSystem.NOT_SPECIFIED);
 		this.audioFormat = audioFormat;
 		children = new Vector<JRNode>();
+		if ( this.getNumAudioOutputs() + this.getNumControlOutputs() != 1 ) {
+			System.err.println( "Invalid JRNode: A node may only have one output" );
+			System.exit(1);
+		}
 	}
 	
 	public void addChild ( JRNode child ) throws JRInvalidEdgeException {
+		if ( child.getNumAudioOutputs() + child.getNumControlOutputs() != 1 ) {
+			System.err.println( "Invalid child: A node may only have one output" );
+			System.exit(1);
+		}
 		if ( this.getDegree() >= this.getMaximumDegree() ) {
 			throw new JRInvalidEdgeException("Too many child nodes");
 		}
 		child.setParent( this );
+		child.isOutputSatisfied = true;
 		children.add(child);
 	}
 
