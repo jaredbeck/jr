@@ -26,8 +26,9 @@ public class JaredReactable {
 		
 		// Start "playing" the tree.
 		// This starts a thread.
-/*		JRAudioSynthesizer jrAudioSynthesizer = new JRAudioSynthesizer(jrTree);
-		jrAudioSynthesizer.start();*/
+		JRAudioSynthesizer jrAudioSynthesizer = new JRAudioSynthesizer(jrTree);
+		Thread snythThread = new Thread( jrAudioSynthesizer );
+		snythThread.start();
 		
 	}
 

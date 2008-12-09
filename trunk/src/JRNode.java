@@ -2,7 +2,7 @@ import java.io.*;
 import java.util.*;
 import javax.sound.sampled.*;
 
-public class JRNode extends AudioInputStream {
+public abstract class JRNode extends AudioInputStream {
 	
 	private static final int maximumDegree = 6;
 	
@@ -17,6 +17,8 @@ public class JRNode extends AudioInputStream {
 	protected JRNode parent;
 	protected Vector<JRNode> children;
 	protected AudioFormat audioFormat;
+	
+	private long sessionID;
 	
 	public JRNode ( ) {
 		/* Convenience constructor uses default audio format defined above */
@@ -100,12 +102,43 @@ public class JRNode extends AudioInputStream {
 		return JRNode.maximumDegree;
 	}
 	
+	public abstract int getNumAudioOutputs ( );
+	public abstract int getNumAudioInputs ( );
+	public abstract int getNumControlOutputs ( );
+	public abstract int getNumControlInputs ( );
+	
+	public int getNumSatisfiedAudioInputs ( ) {
+		int numSatisfied = 0;
+		Iterator i = this.getChildIterator();
+		while ( i.hasNext() ) {
+			JRNode child = (JRNode)i.next();
+			numSatisfied += child.getNumAudioOutputs();
+		}
+		return numSatisfied;
+	}
+	
+	public long getSessionID ( ) {
+		return this.sessionID;
+	}
+
+	/* An object is input-satisfied when it can produce an output. In
+	the case of a filter, which has one audio input and one audio
+	output, input-satisfaction means a connected audio input. In the
+	case of a controller, which has one control output, and no inputs,
+	input-satisfaction is immediate. A generator has one audio output
+	and N control outputs.*/
+	public abstract boolean isInputSatisfied ( );
+	
 	public boolean remove ( JRNode n ) {
 		return children.remove( n );
 	}
 	
 	public void setParent ( JRNode p ) {
 		this.parent = p;
+	}
+	
+	public void setSessionID ( long sid ) {
+		this.sessionID = sid;
 	}
 
 }

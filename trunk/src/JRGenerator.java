@@ -53,6 +53,16 @@ public class JRGenerator extends JRNode {
 		else { throw new IOException("JRGenerator.available() is unsupported when degree > 0"); }
 	}
 
+	public int getNumAudioOutputs ( ) { return 1; }
+	public int getNumAudioInputs ( ) { return 0; }
+	public int getNumControlOutputs ( ) { return 0; }
+	public int getNumControlInputs ( ) { return Integer.MAX_VALUE; }
+	
+	public boolean isInputSatisfied ( ) {
+		// A generator is immediately input-satisfied upon creation.
+		// i.e. A generator does not need any children in order to output.
+		return true;
+	}
 
 	/*
 	  this method should throw an IOException if the frame size is not 1.

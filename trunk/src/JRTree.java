@@ -9,18 +9,24 @@ public class JRTree {
 	public JRTree ( ) {
 	}
 	
-	public JRTree ( JRNode h ) {
+	public JRTree ( JRNode h ) throws JRInvalidNodeException {
 		setHead( h );
 	}
 	
-	public void dump ( ) {
+	public synchronized void clear ( ) {
+		// is it enough to just set the head to null?
+		this.head = null;
+		// will other nodes be garbage collected?
+	}
+	
+	public synchronized void dump ( ) {
 		System.out.println( "Dumping tree with preorder traversal .." );
 		this.dump( this.head, 0, "preorder" );
 		System.out.println( "Dumping tree with postorder traversal .." );
 		this.dump( this.head, 0, "postorder" );
 	}
 	
-	public void dump ( JRNode n, int level, String order ) {
+	public synchronized void dump ( JRNode n, int level, String order ) {
 		// preorder output
 		if ( order.equals("preorder") ) { 
 			for ( int t = 0; t < level; t++ ) { System.out.print( "  " ); }
@@ -42,22 +48,29 @@ public class JRTree {
 		} 
 	}
 	
-	public JRNode getHead ( ) {
+	public synchronized JRNode getHead ( ) {
 		return this.head;
 	}
 	
-	public void setHead ( JRNode h ) {
-		this.head = h;
+	public synchronized void setHead ( JRNode h ) throws JRInvalidNodeException {
+		if ( h.getNumAudioOutputs() == 1) {
+			this.head = h;
+		}
+		else {
+			throw new JRInvalidNodeException( "Invalid head.  Head must have exactly one audio out." );
+		}
 	}
 
 	public static void main ( String[] args ) {
+		
+		JRTree t = new JRTree( );
 		
 		// define audio format
 		float	sampleRate = 44100.0F;
 		AudioFormat audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
 				 sampleRate, 16, 2, 4, sampleRate, false);
 		
-		// Define nodes
+		// Define tree
 		JRGenerator sinewaveGenerator = new JRGenerator( JROscillator.WAVEFORM_SINE );
 		JRGenerator squarewaveGenerator = new JRGenerator( JROscillator.WAVEFORM_SQUARE );
 		JRGenerator triangleGenerator = new JRGenerator( JROscillator.WAVEFORM_TRIANGLE );
@@ -73,12 +86,12 @@ public class JRTree {
 			sinewaveGenerator.addChild( controller2 );
 			sinewaveGenerator.addChild( controller3 );
 			sinewaveGenerator.addChild( controller4 );
+			t.setHead( sinewaveGenerator );
 		}
-		catch (JRInvalidEdgeException e) {
+		catch (JRException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		JRTree t = new JRTree( sinewaveGenerator );
 		
 		// Test traversals, writing to console
 		// t.dump();

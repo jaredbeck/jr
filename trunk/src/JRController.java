@@ -29,6 +29,17 @@ public class JRController extends JRNode {
 			waveform, frequency, amplitude, this.audioFormat, lengthInFrames);
 	}
 	
+	public int getNumAudioOutputs ( ) { return 0; }
+	public int getNumAudioInputs ( ) { return 0; }
+	public int getNumControlOutputs ( ) { return 1; }
+	public int getNumControlInputs ( ) { return 0; }
+	
+	public boolean isInputSatisfied ( ) {
+		// A controller is immediately input-satisfied upon creation.
+		// i.e. A controller does not need any children in order to output.
+		return true;
+	}
+	
 	public int read(byte[] abData, int nOffset, int nLength) throws IOException {
 		if ( this.getDegree() == 0 ) { 
 			return oscillator.read(abData, nOffset, nLength); 
