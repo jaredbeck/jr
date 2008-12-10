@@ -17,7 +17,7 @@ public abstract class JRNode extends AudioInputStream {
 	protected JRNode parent;
 	protected Vector<JRNode> children;
 	protected AudioFormat audioFormat;
-	protected boolean isOutputSatisfied;
+	protected float xpos, ypos;
 	
 	private long sessionID;
 	
@@ -53,7 +53,6 @@ public abstract class JRNode extends AudioInputStream {
 			throw new JRInvalidEdgeException("Too many child nodes");
 		}
 		child.setParent( this );
-		child.isOutputSatisfied = true;
 		children.add(child);
 	}
 
@@ -67,6 +66,12 @@ public abstract class JRNode extends AudioInputStream {
 	
 	public int getDegree ( ) {
 		return children.size();
+	}
+	
+	public float getDistance(JRNode n) {
+		float dx = this.xpos-n.getX();
+		float dy = this.ypos-n.getY();
+		return (float)Math.sqrt(dx*dx+dy*dy);
 	}
 
 	public JRNode getFirstChild ( ) {
@@ -127,8 +132,32 @@ public abstract class JRNode extends AudioInputStream {
 		return numSatisfied;
 	}
 	
+	public String getOutputType ( ) throws JRException {
+		if ( this.getNumAudioOutputs() > 0 ) { return "audio"; }
+		else if ( this.getNumControlOutputs() > 0 ) { return "control"; }
+		else { throw new JRException( "Unreckognized node output type" ); }
+	}
+	
 	public long getSessionID ( ) {
 		return this.sessionID;
+	}
+
+	public float getX() { return xpos; }
+	public float getY() { return ypos; }	
+
+	public boolean hasInputType ( String inputType ) {
+		boolean result = false;
+		if ( inputType.equals("audio") ) {
+			result = this.getNumAudioInputs() > 0;
+		}
+		else if ( inputType.equals("control") ) {
+			result = this.getNumControlInputs() > 0;
+		}
+		return result;
+	}
+	
+	public boolean hasParent ( ) {
+		return this.parent != null;
 	}
 
 	/* An object is input-satisfied when it can produce an output. In
@@ -138,6 +167,10 @@ public abstract class JRNode extends AudioInputStream {
 	input-satisfaction is immediate. A generator has one audio output
 	and N control outputs.*/
 	public abstract boolean isInputSatisfied ( );
+
+	public boolean isOutputSatisfied ( ) {
+		return this.hasParent();
+	}
 	
 	public boolean remove ( JRNode n ) {
 		return children.remove( n );
@@ -150,5 +183,8 @@ public abstract class JRNode extends AudioInputStream {
 	public void setSessionID ( long sid ) {
 		this.sessionID = sid;
 	}
+	
+	public void setX ( float x ) { this.xpos = x; }
+	public void setY ( float y ) { this.ypos = y; }	
 
 }
