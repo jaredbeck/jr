@@ -28,27 +28,21 @@ public class JRConnectionManager implements TuioListener {
 		
 		First, the tree head is set to a new JRMixer()
 		
-		Then, while any objects remain input-satisfied, but
-		output-un-satisfied, connect those outputs to the nearest
-		appropriate inputs.  
+		Then, create a list of objects which are input-satisfied, but
+		output-un-satisfied.  Refer to these objects as "eager".
 		
-		An objeect is input-satisfied when it can produce an output.  In
+		An object is input-satisfied when it can produce an output.  In
 		the case of a filter, which has one audio input and one audio
-		output, input-satisfaction means a connected audio input.
+		output, input-satisfaction means a connected audio input. In the
+		case of a controller, which has one control output, and no inputs,
+		input-satisfaction is immediate.
 
-		In the case of a controller, which has one control output, and no
-		inputs, input-satisfaction is immediate.
-
-		A generator has one audio output and N control outputs.
-
-		Thus, the first itteration will connect each controller's control
-		output to the nearest control input.  The first itteration will
-		also connect each generator's audio output to the nearest audio
-		input.
+		Next, connect eager objects to the nearest appropriate input.
 		
-		Itteration terminates when no objects are input-satisfied. This
-		can result in objects with unconnected outputs.  This is not an
-		error. 
+		After connecting all eager objects, re-iterate.
+		
+		Iteration terminates when no objects are eager. This can result in
+		objects with unconnected outputs.  This is not an error. 
 		*/
 		
 		else {
@@ -58,8 +52,7 @@ public class JRConnectionManager implements TuioListener {
 			try { 
 				
 				/* The head of a non-trivial tree is a Mixer. This mixer
-				object is not represented by a tangible object on the
-				tabletop.  */
+				is not represented by a tangible object on the tabletop. */
 				JRMixer m = new JRFinalMixer();
 				m.setX( 0.5F );
 				m.setY( 0.5F );
@@ -67,8 +60,8 @@ public class JRConnectionManager implements TuioListener {
 				nodes.add( m );
 				
 				// Begin algorithm
-				boolean continueItteration = true;
-				while ( continueItteration ) {
+				boolean continueIteration = true;
+				while ( continueIteration ) {
 					System.out.println("DEBUG: buildTree: Itterate");
 
 					/* Count input-satisfied nodes */
@@ -81,91 +74,103 @@ public class JRConnectionManager implements TuioListener {
 					AbstractSet eagerNodes = getEagerNodes( nodes );
 					System.out.println("DEBUG: buildTree:  There are " + eagerNodes.size() + " eager nodes");
 					
-					/* Sort eager nodes by distance to the nearest appropriate
-					input on the table.  For example, if one controller is
-					distance 50 from the nearest control input, and another
-					controller is distance 40, we want to create the shorter
-					edge first. */
-					System.out.println("DEBUG: buildTree:  Distances of shortest valid edges:");
-					AbstractMap<Float,JRNode[]> mapDist = new HashMap<Float,JRNode[]>();
+					/* Iteration terminates when no objects are eager. */
+					if ( eagerNodes.size() == 0 ) { continueIteration = false; }
+					else {
 					
-					// for each eager node,
-					Iterator eagerIterator = eagerNodes.iterator();
-					while ( eagerIterator.hasNext() ) {
-						JRNode en = (JRNode)eagerIterator.next();
+						/* Sort eager nodes by distance to the nearest appropriate
+						input on the table.  For example, if one controller is
+						distance 50 from the nearest control input, and another
+						controller is distance 40, we want to create the shorter
+						edge first. */
+						System.out.println("DEBUG: buildTree:  Distances of shortest valid edges:");
+						AbstractMap<Float,JRNode[]> mapDist = new HashMap<Float,JRNode[]>();
 						
-						// which node (with appropriate input) is closest?
-						JRNode closestNode = null;
-						float smallestDistance = Float.POSITIVE_INFINITY;
-						
-						// for each node n in all nodes
-						// (except the current eager node)
-						Iterator allNodeIterator = nodes.iterator();
-						while ( allNodeIterator.hasNext() ) {
-							JRNode n = (JRNode)allNodeIterator.next();
-							if ( n.getSessionID() != en.getSessionID() ) {
-	
-								// if it has an appropriate input to match the eager output
-								if ( n.hasInputType( en.getOutputType() ) ) {
-									float d = en.getDistance(n);
-									if ( d < smallestDistance ) {
-										smallestDistance = d;
-										closestNode = n;
+						// for each eager node,
+						Iterator eagerIterator = eagerNodes.iterator();
+						while ( eagerIterator.hasNext() ) {
+							JRNode en = (JRNode)eagerIterator.next();
+							
+							// which node (with appropriate input) is closest?
+							JRNode closestNode = null;
+							float smallestDistance = Float.POSITIVE_INFINITY;
+							
+							// for each node n in all nodes
+							// (except the current eager node)
+							Iterator allNodeIterator = nodes.iterator();
+							while ( allNodeIterator.hasNext() ) {
+								JRNode n = (JRNode)allNodeIterator.next();
+								if ( n.getSessionID() != en.getSessionID() ) {
+		
+									// if it has an appropriate input to match the eager output
+									if ( n.hasInputType( en.getOutputType() ) ) {
+										float d = en.getDistance(n);
+										if ( d < smallestDistance ) {
+											smallestDistance = d;
+											closestNode = n;
+										}
 									}
 								}
 							}
+							// either there are no nodes with an appropriate input
+							// or the closest node was found
+							if ( closestNode != null ) {
+								JRNode[] edge = new JRNode[2];
+								edge[0] = en;
+								edge[1] = closestNode;
+								mapDist.put( smallestDistance, edge );
+								System.out.println("DEBUG: buildTree:    " + en.getSessionID() + "->" + closestNode.getSessionID() + " == " + smallestDistance);
+							}
 						}
-						// either there are no nodes with an appropriate input
-						// or the closest node was found
-						if ( closestNode != null ) {
-							JRNode[] edge = new JRNode[2];
-							edge[0] = en;
-							edge[1] = closestNode;
-							mapDist.put( smallestDistance, edge );
-							System.out.println("DEBUG: buildTree:    " + en.getSessionID() + "->" + closestNode.getSessionID() + " == " + smallestDistance);
+						
+						// convert map to sorted list
+						Set<Float> distSet = mapDist.keySet();
+						Float[] sortedDistances = (Float[])distSet.toArray(new Float[0]);
+						Arrays.sort(sortedDistances);
+						
+						/*System.out.print("DEBUG: buildTree:  " + sortedDistances.length + " sorted distances: ");
+						for (int blah = 0; blah < sortedDistances.length; blah++) {
+							System.out.print(sortedDistances[blah] + " ");
 						}
-					}
-					
-					// convert map to sorted list
-					Set<Float> distSet = mapDist.keySet();
-					Float[] sortedDistances = (Float[])distSet.toArray(new Float[0]);
-					Arrays.sort(sortedDistances);
-					
-					/*System.out.print("DEBUG: buildTree:  " + sortedDistances.length + " sorted distances: ");
-					for (int blah = 0; blah < sortedDistances.length; blah++) {
-						System.out.print(sortedDistances[blah] + " ");
-					}
-					System.out.println();*/
-					
-					AbstractList<JRNode[]> sortedEdges = new ArrayList<JRNode[]>();
-					for (int i = 0; i < sortedDistances.length; i++) {
-						JRNode[] edge = mapDist.get( sortedDistances[i] );
-						sortedEdges.add( edge );
-					}
-					
-					// check the sorted list
-					System.out.print("DEBUG: buildTree:  Valid edges (sorted by distance): ");
-					Iterator foo = sortedEdges.iterator();
-					while (foo.hasNext()) {
-						JRNode[] bar = (JRNode[])foo.next();
-						System.out.print(bar[0].getSessionID() + "->" + bar[1].getSessionID() + " ");
-					}
-					System.out.println();
-					
-					/* Now, given the list of valid edges sorted by distance,
-					we can apply that list to the collection of nodes.  For each
-					edge, we call parent.addChild() */
-					
-					/* Define the condition for normal termination of itteration here.
-					For now, we limit to one itteration via a throw. */
-					throw new JRException( "Planned premature termination" );
-				}
-			}
+						System.out.println();*/
+						
+						AbstractList<JRNode[]> sortedEdges = new ArrayList<JRNode[]>();
+						for (int i = 0; i < sortedDistances.length; i++) {
+							JRNode[] edge = mapDist.get( sortedDistances[i] );
+							sortedEdges.add( edge );
+						}
+						
+						/* Now, given the list of valid edges sorted by distance,
+						we can apply that list to the collection of nodes.  For each
+						edge, we call parent.addChild() */
+						System.out.print("DEBUG: buildTree:  Valid edges (sorted by distance): ");
+						Iterator edgeIterator = sortedEdges.iterator();
+						while (edgeIterator.hasNext()) {
+							JRNode[] edge = (JRNode[])edgeIterator.next();
+							System.out.print(edge[0].getSessionID() + "->" + edge[1].getSessionID() + " ");
+							JRNode child = edge[0];
+							JRNode parent = edge[1];
+							parent.addChild(child);
+							}
+						System.out.println();
+
+					System.out.println("DEBUG: buildTree:  End working with eager nodes");
+
+					} // end working with eager nodes
+						
+					System.out.println("DEBUG: buildTree: End of an iteration");
+
+				} // end iteration
+
+			} // end try block
 			catch (JRException e) { 
 				System.err.println( "ERROR: Tree construction failed: " + e.getMessage() );
 				jrTree.clear();
 			}
-		}
+			
+		} // end non-trivial tree construction
+		
+		System.out.println("DEBUG: buildTree: exit");
 	}
 
 	/* An "eager" node is input-satisfied, but output-unsatisfied. */
