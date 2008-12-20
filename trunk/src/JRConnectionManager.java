@@ -5,9 +5,19 @@ public class JRConnectionManager implements TuioListener {
 	private JRTree jrTree;
 	private Hashtable<Long,JRTuioObject> objectList = new Hashtable<Long,JRTuioObject>();
 	private Hashtable<Long,TuioCursor> cursorList = new Hashtable<Long,TuioCursor>();
+	private Vector<JRConManListener> listenerList;
 	
 	public JRConnectionManager ( JRTree jrTree ) {
 		this.jrTree = jrTree;
+		listenerList = new Vector<JRConManListener>();
+	}
+	
+	public void addListener ( JRConManListener listener ) {
+		listenerList.addElement(listener);
+	}
+	
+	public void removeListener ( JRConManListener listener ) {
+		listenerList.removeElement(listener);
 	}
 	
 	public void buildTree ( ) {
@@ -20,7 +30,10 @@ public class JRConnectionManager implements TuioListener {
 			JRTuioObject tobj = (JRTuioObject)objectList.values().toArray()[0];
 			int fiducialID = tobj.getFiducialID();
 			try { jrTree.setHead( JRNode.getInstance ( fiducialID ) ); }
-			catch (JRException e) { System.err.println(e.getMessage()); }
+			catch (JRException e) { 
+				System.err.println("buildTree(): Trivial tree construction failed: " + e.getMessage());
+				jrTree.clear();
+			}
 		}
 	
 		/* For more than one TUIO objects, tree construction follows a
@@ -164,11 +177,18 @@ public class JRConnectionManager implements TuioListener {
 
 			} // end try block
 			catch (JRException e) { 
-				System.err.println( "ERROR: Tree construction failed: " + e.getMessage() );
+				System.err.println( "ERROR: Non-trivial tree construction failed: " + e.getMessage() );
 				jrTree.clear();
 			}
 			
 		} // end non-trivial tree construction
+		
+		// Notify listeners that the tree has changed
+		Iterator i = listenerList.iterator();
+		while ( i.hasNext() ) {
+			JRConManListener l = (JRConManListener) i.next();
+			l.refresh();
+			}
 		
 		System.out.println("DEBUG: buildTree: exit");
 	}

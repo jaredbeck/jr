@@ -1,18 +1,89 @@
 import java.io.*;
 import javax.sound.sampled.*;
 
-public class JRAudioSynthesizer implements Runnable {
+public class JRAudioSynthesizer implements Runnable, JRConManListener {
 	
 	// not sure what is a good buffer size
 	// so far, I have tried 64k and 128k with equal success
 	private static final int BUFFER_SIZE = 64000;
-	
 	private byte[] abData;
+	
+	// Tree is a model of synth modules and patch cables
 	private JRTree jrTree;
 	
+	// System audio line
+	private SourceDataLine line;
+	
+	// Constructor
 	public JRAudioSynthesizer ( JRTree jrTree ) { 
 		this.jrTree = jrTree;
 		this.abData = new byte[BUFFER_SIZE];
+		line = null; // line will be acquired and opened in run()
+	}
+		
+	/* refresh()
+	Connection manager event. The tree has been rebuilt.  Data
+	currently in the line buffer is now stale.  If we continue to
+	play stale data, the reactable will appear laggy, or 
+	unresponsive.  So, we must refresh the data in the line.  
+	
+	We could just flush the line, and wait for run() to refill it, but
+	this causes a clicking noise, presumably because there are a few
+	milliseconds with no data? From the javadocs:  "It is legal to flush
+	a line that is not stopped, but doing so on an active line is likely
+	to cause a discontinuity in the data, resulting in a perceptible
+	click." */
+	public void refresh ( ) {
+		//System.out.println( "DEBUG: JRAudioSynthesizer.refresh() begin" );
+		
+		/* Prepare fresh data.  (See run() for more comments on this stuff) */
+		JRNode head = this.jrTree.getHead();
+		if ( head != null ) {
+		
+			int	nRead = readFromNode( head );
+			if (nRead != -1) {
+				//System.out.println("IO: " + nRead + " read from head");
+				swapByteOrder( nRead );				
+
+				/* Stop, Flush, Write, Start 
+				Hopefully quickly enough to avoid a click. */
+				line.stop();
+				line.flush();
+				writeToLine( nRead );
+				line.start();
+			}
+			else {
+				System.out.println( "DEBUG: JRAudioSynthesizer.refresh(): nRead == -1" );
+			}
+				
+		}
+		else {
+			/* The tree is now empty. */
+			//System.out.println( "DEBUG: JRAudioSynthesizer.refresh(): head == null" );
+			line.stop();
+			line.flush();
+		}
+		
+		//System.out.println( "DEBUG: JRAudioSynthesizer.refresh() end" );
+	}
+	
+	
+	private int readFromNode ( JRNode node ) {
+		int	nRead = -1;
+		try { nRead = node.read ( this.abData ); }
+		catch (Exception e) { 
+			e.printStackTrace(); 
+			System.exit(1);
+		}
+		
+		/* Sanity check: If data was read, the buffer should have
+		an even length.  (assuming 16bit (two byte) sample size) */
+		if ( nRead != -1 && nRead % 2 != 0) { 	
+			System.err.println("ERROR: Assertion failed: odd length buffer"); 
+			System.exit(1);
+		}
+		
+		return nRead;
 	}
 	
 	public void run ( ) {
@@ -23,7 +94,6 @@ public class JRAudioSynthesizer implements Runnable {
 				 sampleRate, 16, 2, 4, sampleRate, false);
 	
 		// Acquire, open, and start a Line
-		SourceDataLine line = null;
 		DataLine.Info	info = new DataLine.Info( SourceDataLine.class, audioFormat );
 		try
 		{
@@ -41,7 +111,7 @@ public class JRAudioSynthesizer implements Runnable {
 			System.exit(1);
 		}
 		line.start();
-		System.out.println( "DEBUG: JRAudioSynthesizer: Line started .." );
+		//System.out.println( "DEBUG: JRAudioSynthesizer: Line started .." );
 	
 		while ( true ) {
 			//System.out.println( "DEBUG: JRAudioSynthesizer: is running .." );
@@ -51,37 +121,23 @@ public class JRAudioSynthesizer implements Runnable {
 			
 			// if so, try to read from the head node
 			if ( head != null ) {
-				int	nRead = -1;
-				try { nRead = head.read(abData); }
-				catch (Exception e) { 
-					e.printStackTrace(); 
-					System.exit(1);
-				}			
+				int	nRead = readFromNode( head );
 	
-				// -1 indicates end of input
+				// -1 indicates end of input.  This is unexpected and
+				// is an error, so we exit the main loop, and shut down.
 				if (nRead == -1) { break; }
-				
-				// otherwise, try to process the input and write to the line
 				else {
-	
-					// Assertion: assuming 16bit sample size (two bytes) we can assert an even length buffer
-					if (nRead % 2 != 0) { 	
-						System.err.println("ERROR: Assertion failed: odd length buffer"); 
-						System.exit(1);
-					}
+					//System.out.println("IO: " + nRead + " read from head");
 				
-					//System.out.println(nRead + " read from head");
-				
-					// swap byte order to little endian, because Jared's hardware is little endian
-					for ( int i = 0; i < nRead; i += 2) {
-						byte mostSigByte = abData[i];
-						abData[i] = abData[i+1];
-						abData[i+1] = mostSigByte;
-					}
+					// swap byte order to little endian, 
+					// because Jared's hardware is little endian
+					swapByteOrder( nRead );
 					
 					// write to the line
-					int	nWritten = line.write(abData, 0, nRead); 
-					//System.out.println(nWritten + " written to line");
+					writeToLine( nRead );
+					
+					// start the line if it is not active
+					if ( ! line.isActive() ) { line.start(); }
 				}
 				
 			} // end if ( head != null )
@@ -94,9 +150,31 @@ public class JRAudioSynthesizer implements Runnable {
 			}
 		}
 		
-		// release resources
+		// cease I/O activity
+		line.stop();
+		
+		// Flushes queued data from the line. The flushed data is discarded.
 		line.flush();
+		
+		/* Close the line, releasing system resources */
 		line.close();
+	}
+
+	
+	private void swapByteOrder ( int bufferLength ) {
+		for ( int i = 0; i < bufferLength; i += 2) {
+			byte mostSigByte = abData[i];
+			abData[i] = abData[i+1];
+			abData[i+1] = mostSigByte;
+		}
+	}
+
+	
+	private int writeToLine ( int length ) {
+		int	nWritten = line.write(abData, 0, length);
+		//System.out.println("IO: " + nWritten + " written to line");
+		//System.out.println("IO: Line buffer length " + line.available() + " / " + line.getBufferSize());		
+		return nWritten;
 	}
 	
 }
