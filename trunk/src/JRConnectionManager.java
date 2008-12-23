@@ -30,8 +30,11 @@ public class JRConnectionManager implements TuioListener {
 		// Trivial case: One object
 		else if ( numTuioObjects == 1) { 
 			JRTuioObject tobj = (JRTuioObject)objectList.values().toArray()[0];
-			int fiducialID = tobj.getFiducialID();
-			try { jrTree.setHead( JRNode.getInstance ( fiducialID ) ); }
+			try {
+				JRNode newHeadNode = JRNode.getInstance ( tobj.getFiducialID() );
+				newHeadNode.setSessionID( tobj.getSessionID() );
+				jrTree.setHead( newHeadNode ); 
+			}
 			catch (JRInvalidNodeException e) {
 				// Not an error.  It's just that the object doesn't make a good head node.
 				jrTree.clear();
@@ -187,11 +190,7 @@ public class JRConnectionManager implements TuioListener {
 		} // end non-trivial tree construction
 		
 		// Notify listeners that the tree has changed
-		Iterator i = listenerList.iterator();
-		while ( i.hasNext() ) {
-			JRConManListener l = (JRConManListener) i.next();
-			l.refresh();
-			}
+		refreshNotify();
 		
 		//System.out.println("DEBUG: buildTree: exit");
 	}
@@ -246,16 +245,37 @@ public class JRConnectionManager implements TuioListener {
 	}
 
 	public void updateTuioObject(TuioObject tobj) {
-		JRTuioObject demo = (JRTuioObject)objectList.get(tobj.getSessionID());
-		demo.update(tobj);
+		JRTuioObject jrto = (JRTuioObject)objectList.get(tobj.getSessionID());
+		jrto.update(tobj);
+
 		//System.out.println("set obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle()+" "+tobj.getMotionSpeed()+" "+tobj.getRotationSpeed()+" "+tobj.getMotionAccel()+" "+tobj.getRotationAccel());
+
+		// get the angle as a float from 0.0 to 1.0
+		float angleNormalized = jrto.getAngle() / (float)( 2 * Math.PI );
+		//System.out.println( "angleNormalized = " + angleNormalized );
+
+		/* acquire reference to JRNode by traversing the tree looking for
+		a session id */
+		JRNode n = this.jrTree.getNode( tobj.getSessionID() );
+		
 		// update the properties of the appropriate node in the tree (use mutators)
-		// acquire reference to JRNode by either:
-			// 1. traverse the tree looking for a session id 
-				// but traversal is cpu expensive
-			// 2. keep a reference to each node in this connection manager
-				// this raises the reference count to two, so it
-				// could possibly break garbage collection if I'm not careful
+		boolean bufferIsNowStale = false;
+		if ( n != null ) { 
+			bufferIsNowStale = n.setAngle( angleNormalized ); }
+		else {
+			System.err.println("Update fail: Unable to find node with ses id " + tobj.getSessionID() + " in the tree");
+		}
+		
+		if (bufferIsNowStale) { refreshNotify(); }
+	}
+	
+	private void refreshNotify() {
+		// Notify listeners that the tree has changed
+		Iterator i = listenerList.iterator();
+		while ( i.hasNext() ) {
+			JRConManListener l = (JRConManListener) i.next();
+			l.refresh();
+			}
 	}
 	
 	public void removeTuioObject(TuioObject tobj) {

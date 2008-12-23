@@ -52,6 +52,35 @@ public class JRTree {
 		return this.head;
 	}
 	
+	public synchronized JRNode getNode ( long sessionID ) {
+		return this.getNode( sessionID, this.head );
+	}
+	
+	private synchronized JRNode getNode ( long sessionID, JRNode current ) {
+	
+		// TODO: I think this could be written better ...
+		// it's kind of insane, but seems to work
+		
+		if ( current.getSessionID() == sessionID ) {
+			return current; // base case
+		}
+		else {
+			if ( current.getDegree() == 0 ) {
+				return null; // base case
+			}
+			else {
+				Iterator i = current.getChildIterator();
+				while ( i.hasNext() ) {
+					JRNode n = getNode( sessionID, (JRNode)i.next() ); // recurse
+					if (n != null) {
+						return n; // base case
+					}
+				}
+			}
+		}
+		return null; // base case
+	}
+	
 	public synchronized void setHead ( JRNode h ) throws JRInvalidNodeException {
 		if ( h.getNumAudioOutputs() == 1) {
 			this.head = h;

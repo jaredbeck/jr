@@ -186,5 +186,10 @@ public abstract class JRNode extends AudioInputStream {
 	
 	public void setX ( float x ) { this.xpos = x; }
 	public void setY ( float y ) { this.ypos = y; }	
+	
+	public boolean setAngle ( float a ) { 
+		/* Overwrite setAngle() in the child classes */ 
+		return false;
+		}	
 
 }

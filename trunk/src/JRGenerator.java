@@ -6,19 +6,20 @@ public class JRGenerator extends JRNode {
 
 	private int waveform;
 	private AudioInputStream oscillator;
+	private float frequency;
 	
 	public JRGenerator ( int waveform ) {
 		super();
 		
 		// define waveform properties
 		this.waveform = waveform;
-		float	frequency = 550.0F;
+		this.frequency = 550.0F;
 		float	amplitude = 0.7F;
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		
 		// initialize oscillator
 		this.oscillator = new JROscillator( 
-			waveform, frequency, amplitude, this.audioFormat, lengthInFrames);
+			waveform, this.frequency, amplitude, this.audioFormat, lengthInFrames);
 	}
 	
 	public void addChild ( JRNode child ) throws JRInvalidEdgeException {
@@ -198,6 +199,43 @@ public class JRGenerator extends JRNode {
 			default : r = "Generator";
 		}
 		return r;
+	}
+
+	// setAngle() returns true if it chages something,
+	// resulting in a stale buffer
+	public boolean setAngle ( float a ) { 
+		// new frequency in range from 500-800 Hz
+		float newFrequency = 500.0F + (300.0F * a);
+		return this.setFrequency( newFrequency );		
+	}
+
+	// setFrequency() returns true if it chages something,
+	// resulting in a stale buffer	
+	public boolean setFrequency ( float newFrequency ) {
+	
+		boolean bufferIsNowStale = false;
+	
+		/* TODO: There is a thread safety problem here. I want to replace
+		the oscillator, but what if the syth is reading from it at the
+		same time.  This is bound to happen sooner or later */
+		
+		// Frequency change must be big enough to be worth the effort
+		if ( Math.abs( newFrequency - this.frequency ) > 0.1 ) {
+			
+			// unchanged waveform properties
+			float	amplitude = 0.7F;
+			long lengthInFrames = AudioSystem.NOT_SPECIFIED;
+	
+			// initialize oscillator
+			this.oscillator = new JROscillator( 
+				this.waveform, newFrequency, amplitude, this.audioFormat, lengthInFrames);
+			
+			// update freq
+			this.frequency = newFrequency;
+			bufferIsNowStale = true;
+		}
+		
+		return bufferIsNowStale;
 	}
 
 }
