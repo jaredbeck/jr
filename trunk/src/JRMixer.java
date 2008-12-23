@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.*;
 import javax.sound.sampled.*;
 
 public class JRMixer extends JRNode {
@@ -27,16 +28,24 @@ public class JRMixer extends JRNode {
 			throw new IOException("length must be an integer multiple of frame size");
 		}
 		
-		// No children
-		if ( this.getDegree() == 0 ) {
-			throw new IOException("JRMixer.read(byte[], int, int) is unsupported when degree == 0"); 
+		// No audio input
+		if ( this.getNumSatisfiedAudioInputs() == 0 ) {
+			return -1;
+			//throw new IOException("JRMixer.read() is unsupported when getNumSatisfiedAudioInputs() == 0"); 
 		}
 		
 		// One child
-		else if ( this.getDegree() == 1 ) {
+		else if ( this.getNumSatisfiedAudioInputs() == 1 ) {
 
-			// read from child
-			JRNode c = (JRNode)this.getFirstChild();
+			// Which child is the audio input?
+			Iterator ci = this.getChildIterator();
+			JRNode c = null;
+			while ( ci.hasNext() ) {
+				c = (JRNode)ci.next();
+				if ( c.getNumAudioOutputs() == 1 ) break;
+				}
+
+			// read from audio input
 			int nRead = c.read(abData, nOffset, nLength);
 			
 			// assertion: frame size is four bytes
@@ -47,9 +56,9 @@ public class JRMixer extends JRNode {
 			return nRead;
 		}
 		
-		// More than one child
-		else { 
-			throw new IOException("JRMixer.read(byte[], int, int) is unsupported when degree > 1"); 
+		// More than one audio input
+		else {
+			throw new IOException("JRMixer.read(byte[], int, int) is unsupported when getNumSatisfiedAudioInputs() > 1");
 		}
 	}
 

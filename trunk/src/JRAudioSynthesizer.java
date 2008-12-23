@@ -14,13 +14,23 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 	// System audio line
 	private SourceDataLine line;
 	
+	// Controls
+	private boolean halt;
+	
 	// Constructor
 	public JRAudioSynthesizer ( JRTree jrTree ) { 
 		this.jrTree = jrTree;
 		this.abData = new byte[BUFFER_SIZE];
 		line = null; // line will be acquired and opened in run()
+		halt = false;
 	}
-		
+	
+	// halt() - cease execution.  causes run() to shut down
+	public void halt() {
+		//System.out.println("DEBUG: JRAudioSynthesizer: halt()");
+		this.halt = true;
+	}
+	
 	/* refresh()
 	Connection manager event. The tree has been rebuilt.  Data
 	currently in the line buffer is now stale.  If we continue to
@@ -54,6 +64,8 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 			}
 			else {
 				System.out.println( "DEBUG: JRAudioSynthesizer.refresh(): nRead == -1" );
+				line.stop();
+				line.flush();
 			}
 				
 		}
@@ -113,7 +125,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 		line.start();
 		//System.out.println( "DEBUG: JRAudioSynthesizer: Line started .." );
 	
-		while ( true ) {
+		while ( !halt ) {
 			//System.out.println( "DEBUG: JRAudioSynthesizer: is running .." );
 			
 			// does the tree have a head?
@@ -123,9 +135,14 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 			if ( head != null ) {
 				int	nRead = readFromNode( head );
 	
-				// -1 indicates end of input.  This is unexpected and
-				// is an error, so we exit the main loop, and shut down.
-				if (nRead == -1) { break; }
+				// -1 indicates end of input
+				if (nRead == -1) {
+					try { Thread.sleep(33); }
+					catch (InterruptedException e) { 
+						System.err.println("JRAudioSynthesizer: Caught unexpected interrupt:" + e.getMessage());
+						break;
+					}	
+				}
 				else {
 					//System.out.println("IO: " + nRead + " read from head");
 				
@@ -147,17 +164,14 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 			try { Thread.sleep(33); }
 			catch (InterruptedException e) { 
 				System.err.println("JRAudioSynthesizer: Caught unexpected interrupt:" + e.getMessage());
+				break;
 			}
 		}
 		
-		// cease I/O activity
 		line.stop();
-		
-		// Flushes queued data from the line. The flushed data is discarded.
 		line.flush();
 		
-		/* Close the line, releasing system resources */
-		line.close();
+		//System.out.println("DEBUG: JRAudioSynthesizer: Exiting ..");
 	}
 
 	

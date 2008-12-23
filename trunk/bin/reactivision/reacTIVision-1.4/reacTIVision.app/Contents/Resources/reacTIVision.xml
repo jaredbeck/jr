@@ -15,7 +15,7 @@ to change from their default
 <calibration file="default.grid" invert="xa" />
 
 -->
-    <finger size="12" sensitivity="100" />
-    <image display="src" equalize="false" gradient="64" />
+    <finger size="16" sensitivity="100" />
+    <image display="src" equalize="false" gradient="62" />
     <calibration file="default.grid" invert=" xa" />
 </reactivision>

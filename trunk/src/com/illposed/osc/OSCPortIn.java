@@ -46,7 +46,7 @@ public class OSCPortIn extends OSCPort implements Runnable {
 	 * @throws SocketException
 	 */
 	public OSCPortIn(int port) throws SocketException {
-		System.out.println("DEBUG: OSCPortIn()");
+		//System.out.println("DEBUG: OSCPortIn()");
 		socket = new DatagramSocket(port);
 		this.port = port;
 	}
@@ -55,7 +55,7 @@ public class OSCPortIn extends OSCPort implements Runnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	public void run() {
-		System.out.println("DEBUG: OSCPortIn.run() begin [while isListening]");
+		//System.out.println("DEBUG: OSCPortIn: run()");
 		byte[] buffer = new byte[1536];
 		DatagramPacket packet = new DatagramPacket(buffer, 1536);
 		while (isListening) {
@@ -71,26 +71,25 @@ public class OSCPortIn extends OSCPort implements Runnable {
 				if (isListening) e.printStackTrace();
 			} 
 		}
-		System.out.println("DEBUG: OSCPortIn.run() end");
-		System.out.flush();
+		//System.out.println("DEBUG: OSCPortIn: Exiting ..");
 	}
 	
 	/**
 	 * Start listening for incoming OSCPackets
 	 */
 	public void startListening() {
-		System.out.println("OSCPortIn.startListening() begin");
+		//System.out.println("DEBUG: OSCPortIn.startListening() begin");
 		isListening = true;
 		Thread thread = new Thread(this);
 		thread.start();
-		System.out.println("OSCPortIn.startListening() end");
+		//System.out.println("DEBUG: OSCPortIn.startListening() end");
 	}
 	
 	/**
 	 * Stop listening for incoming OSCPackets
 	 */
 	public void stopListening() {
-		System.out.println("OSCPortIn.stopListening() [sets isListening to false]");
+		//System.out.println("DEBUG: OSCPortIn.stopListening()");
 		isListening = false;
 	}
 	

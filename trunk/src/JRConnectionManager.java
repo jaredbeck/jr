@@ -24,14 +24,20 @@ public class JRConnectionManager implements TuioListener {
 		// How many TUIO objects are on the table?
 		int numTuioObjects = objectList.size();
 		
-		// For 0 or 1 TUIO objects, tree construction is trivial
+		// Trivial case: Zero objects
 		if ( numTuioObjects == 0 ) { jrTree.clear(); }
+		
+		// Trivial case: One object
 		else if ( numTuioObjects == 1) { 
 			JRTuioObject tobj = (JRTuioObject)objectList.values().toArray()[0];
 			int fiducialID = tobj.getFiducialID();
 			try { jrTree.setHead( JRNode.getInstance ( fiducialID ) ); }
-			catch (JRException e) { 
-				System.err.println("buildTree(): Trivial tree construction failed: " + e.getMessage());
+			catch (JRInvalidNodeException e) {
+				// Not an error.  It's just that the object doesn't make a good head node.
+				jrTree.clear();
+			}
+			catch (Exception e) {
+				System.err.println("buildTree(): Trivial tree construction failed unexpectedly: " + e.getMessage());
 				jrTree.clear();
 			}
 		}
@@ -59,7 +65,7 @@ public class JRConnectionManager implements TuioListener {
 		*/
 		
 		else {
-			System.out.println("DEBUG: buildTree: Build non-trivial tree");
+			//System.out.println("DEBUG: buildTree: Build non-trivial tree");
 			jrTree.clear();
 			AbstractSet<JRNode> nodes = getNodes();
 			try { 
@@ -75,17 +81,17 @@ public class JRConnectionManager implements TuioListener {
 				// Begin algorithm
 				boolean continueIteration = true;
 				while ( continueIteration ) {
-					System.out.println("DEBUG: buildTree: Itterate");
+					//System.out.println("DEBUG: buildTree: Itterate");
 
 					/* Count input-satisfied nodes */
 					AbstractSet inputSatisfiedNodes = getInputSatisfiedNodes( nodes );
-					System.out.println("DEBUG: buildTree:  There are " + inputSatisfiedNodes.size() + " input-satisfied nodes");
+					//System.out.println("DEBUG: buildTree:  There are " + inputSatisfiedNodes.size() + " input-satisfied nodes");
 
 					/* Actually, we are only concerned with nodes which are both
 					input-satisfied and output-unsatisfied.  Let's call these
 					"eager" nodes. */
 					AbstractSet eagerNodes = getEagerNodes( nodes );
-					System.out.println("DEBUG: buildTree:  There are " + eagerNodes.size() + " eager nodes");
+					//System.out.println("DEBUG: buildTree:  There are " + eagerNodes.size() + " eager nodes");
 					
 					/* Iteration terminates when no objects are eager. */
 					if ( eagerNodes.size() == 0 ) { continueIteration = false; }
@@ -96,7 +102,8 @@ public class JRConnectionManager implements TuioListener {
 						distance 50 from the nearest control input, and another
 						controller is distance 40, we want to create the shorter
 						edge first. */
-						System.out.println("DEBUG: buildTree:  Distances of shortest valid edges:");
+
+						//System.out.println("DEBUG: buildTree:  Distances of shortest valid edges:");
 						AbstractMap<Float,JRNode[]> mapDist = new HashMap<Float,JRNode[]>();
 						
 						// for each eager node,
@@ -132,21 +139,16 @@ public class JRConnectionManager implements TuioListener {
 								edge[0] = en;
 								edge[1] = closestNode;
 								mapDist.put( smallestDistance, edge );
-								System.out.println("DEBUG: buildTree:    " + en.getSessionID() + "->" + closestNode.getSessionID() + " == " + smallestDistance);
+								//System.out.println("DEBUG: buildTree:    " + en.getSessionID() + "->" + closestNode.getSessionID() + " == " + smallestDistance);
 							}
 						}
 						
-						// convert map to sorted list
+						// Sort map keys (distances) from shortest to longest
 						Set<Float> distSet = mapDist.keySet();
 						Float[] sortedDistances = (Float[])distSet.toArray(new Float[0]);
 						Arrays.sort(sortedDistances);
 						
-						/*System.out.print("DEBUG: buildTree:  " + sortedDistances.length + " sorted distances: ");
-						for (int blah = 0; blah < sortedDistances.length; blah++) {
-							System.out.print(sortedDistances[blah] + " ");
-						}
-						System.out.println();*/
-						
+						// Build sorted list of edges, from shortest to longest
 						AbstractList<JRNode[]> sortedEdges = new ArrayList<JRNode[]>();
 						for (int i = 0; i < sortedDistances.length; i++) {
 							JRNode[] edge = mapDist.get( sortedDistances[i] );
@@ -156,22 +158,23 @@ public class JRConnectionManager implements TuioListener {
 						/* Now, given the list of valid edges sorted by distance,
 						we can apply that list to the collection of nodes.  For each
 						edge, we call parent.addChild() */
-						System.out.print("DEBUG: buildTree:  Valid edges (sorted by distance): ");
+						
+						//System.out.print("DEBUG: buildTree:  Valid edges (sorted by distance): ");
 						Iterator edgeIterator = sortedEdges.iterator();
 						while (edgeIterator.hasNext()) {
 							JRNode[] edge = (JRNode[])edgeIterator.next();
-							System.out.print(edge[0].getSessionID() + "->" + edge[1].getSessionID() + " ");
+							//System.out.print(edge[0].getSessionID() + "->" + edge[1].getSessionID() + " ");
 							JRNode child = edge[0];
 							JRNode parent = edge[1];
 							parent.addChild(child);
 							}
-						System.out.println();
+						//System.out.println();
 
-					System.out.println("DEBUG: buildTree:  End working with eager nodes");
+					//System.out.println("DEBUG: buildTree:  End working with eager nodes");
 
 					} // end working with eager nodes
 						
-					System.out.println("DEBUG: buildTree: End of an iteration");
+					//System.out.println("DEBUG: buildTree: End of an iteration");
 
 				} // end iteration
 
@@ -190,7 +193,7 @@ public class JRConnectionManager implements TuioListener {
 			l.refresh();
 			}
 		
-		System.out.println("DEBUG: buildTree: exit");
+		//System.out.println("DEBUG: buildTree: exit");
 	}
 
 	/* An "eager" node is input-satisfied, but output-unsatisfied. */

@@ -40,7 +40,6 @@ public class JRTuioClient implements OSCListener {
 	}
 	
 	public void connect() {
-		System.out.println("TuioClient.connect() begin");
 		try {
 			oscPort = new OSCPortIn(port);
 			oscPort.addListener("/tuio/2Dobj",this);
@@ -48,18 +47,15 @@ public class JRTuioClient implements OSCListener {
 			oscPort.startListening();
 			startTime = System.currentTimeMillis();
 		} catch (Exception e) {
-			System.out.println("failed to connect to port "+port);
+			System.err.println("ERROR: JRTuioClient: failed to connect to port "+port);
 		}
-		System.out.println("TuioClient.connect() end");
 	}
 	
 	public void disconnect() {
-		System.out.println("TuioClient.disconnect() begin");
 		oscPort.stopListening();
 		try { Thread.sleep(100); }
 		catch (Exception e) {};
 		oscPort.close();
-		System.out.println("TuioClient.disconnect() end");
 	}
 	
 	public void addTuioListener(TuioListener listener) {
