@@ -220,7 +220,7 @@ public class JRGenerator extends JRNode {
 		same time.  This is bound to happen sooner or later */
 		
 		// Frequency change must be big enough to be worth the effort
-		if ( Math.abs( newFrequency - this.frequency ) > 0.1 ) {
+		if ( Math.abs( newFrequency - this.frequency ) > 10.0 ) {
 			
 			// unchanged waveform properties
 			float	amplitude = 0.7F;
