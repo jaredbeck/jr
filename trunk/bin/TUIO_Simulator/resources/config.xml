@@ -60,7 +60,8 @@ you can define the type, IDs and position  each object
 first we create four cubes, with six sides and define the according fiducial IDs
 -->
 
-<object class="blue cube" fiducials="0,1,2,3,4,5" active="false" xpos="120" ypos="30" angle="180"/>
+<object class="blue cube" fiducials="0,1,2,3,4,5" active="false" xpos="60" ypos="30" angle="180"/>
+<object class="red cube" fiducials="6,7,8,9,10,11" active="false" xpos="120" ypos="30" angle="180"/>
 <object class="red cube" fiducials="6,7,8,9,10,11" active="false" xpos="180" ypos="30" angle="180"/>
 <object class="yellow cube" fiducials="12,13,14,15,16,17" active="false" xpos="240" ypos="30" angle="180"/>
 <object class="green cube" fiducials="18,19,20,21,22,23" active="false" xpos="300" ypos="30" angle="180"/>
