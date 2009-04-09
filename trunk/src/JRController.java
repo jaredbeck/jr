@@ -3,7 +3,7 @@ import javax.sound.sampled.*;
 
 public class JRController extends JRNode {
 	
-	private static final float defaultAmplitude = 0.7F;
+	private static final float defaultAmplitude = 1.0F;
 	private static final float defaultFrequency = 2.0F; // the range 0.5 to 8 is most useful
 
 	private AudioInputStream oscillator;
@@ -24,9 +24,19 @@ public class JRController extends JRNode {
 	// Main constructor
 	public JRController ( int waveform, float frequency, float amplitude ) {
 		super();
+		
+		/* Allow partial period oscillator read()s.  We can't require whole period
+		read()s because the typical controller's period is around 80000 bytes long,
+		much bigger than the audio synthesizer's line buffer. This is a temporary
+		workaround.  When a rotation action or proximity effect is defined for
+		controllers, we will probably experience the same clicking noises that used
+		to come from generators.  */
+		boolean readWholePeriods = false;
+		
+		// initialize oscillator
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		this.oscillator = new JROscillator( 
-			waveform, frequency, amplitude, this.audioFormat, lengthInFrames);
+			waveform, frequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
 	}
 	
 	public int getNumAudioOutputs ( ) { return 0; }

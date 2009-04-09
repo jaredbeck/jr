@@ -23,13 +23,24 @@ public class JROscillator
 	private byte[]			m_abData;
 	private int			m_nBufferPosition;
 	private long			m_lRemainingFrames;
+	
+	/* readWholePeriods - read() normally copies a period at a time to the
+	provided buffer. Normally, partial periods will be copied in order to
+	completely fill the provided buffer. If readWholePeriods is true, then read()
+	will only copy, whole periods to the provided buffer. Currently, generators
+	only comp whole periods, while controllers are allowed to copy partial periods. 
+	This is sort of a workaround for now.  When a rotation action is defined for
+	controllers, this workaround will no longer be enough of a solution.
+	-Jared 4/9/2009 */
+	private boolean readWholePeriods;
 
 
 	public JROscillator(int nWaveformType,
 			  float fSignalFrequency,
 			  float fAmplitude,
 			  AudioFormat audioFormat,
-			  long lLength)
+			  long lLength,
+			  boolean arg_readWholePeriods)
 	{
 		super(new ByteArrayInputStream(new byte[0]),
 		      new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
@@ -40,7 +51,11 @@ public class JROscillator
 				      audioFormat.getFrameRate(),
 				      audioFormat.isBigEndian()),
 		      lLength);
+		      
 		if (DEBUG) { out("Oscillator.<init>(): begin"); }
+		
+		this.readWholePeriods = arg_readWholePeriods;
+		
 		m_lRemainingFrames = lLength;
 		fAmplitude = (float) (fAmplitude * Math.pow(2, getFormat().getSampleSizeInBits() - 1));
 		
@@ -178,23 +193,50 @@ public class JROscillator
 		// limit this read() to what is available()
 		int	nConstrainedLength = Math.min(available(), nLength);
 		int	nRemainingLength = nConstrainedLength;
+
+		if (DEBUG) { 
+			out("available: " + available()); 
+			out("constrained: " + nConstrainedLength); 
+			out("nRemainingLength: " + nRemainingLength);
+			out("m_abData.length: " + m_abData.length);
+			}
+		
+		// keep track of how many bytes are actually copied
+		int nBytesActuallyRead = 0;
+		
+		// when to stop reading (is it OK to copy partial periods?)
+		int minCopyPassLenInBytes = -1;
+		if (this.readWholePeriods) { minCopyPassLenInBytes = m_abData.length; }
+		else { minCopyPassLenInBytes = getFormat().getFrameSize(); }
 		
 		// Copy data in passes, until nLength is reached, or available() data is exhausted.
 		// The data is copied one period at a time, or, in other words, 
 		// one full Oscillator buffer at a time.
-		while (nRemainingLength > 0)
+		while (nRemainingLength >= minCopyPassLenInBytes)
 		{
+		
+			if (DEBUG) { 
+				out("copy pass begin"); 
+				out("\tnRemainingLength: " + nRemainingLength); 
+				}
+		
 			// The size of a pass is usually a full period (the length of the Oscillator's buffer)
 			// However, if we left off in the middle of the period at the end of the last read(),
-			// then the size of this pass is the remaining length of the period.
+			// then the size of this pass is the remaining length of the period, ie. the 
+			// remainder of the Oscillator's buffer
 			int	nNumBytesToCopyNow = m_abData.length - m_nBufferPosition;
-			
+				
 			// Of course, if that's too much data (more than was requested) 
 			// then just satisfy the request (fill up abData)
 			nNumBytesToCopyNow = Math.min(nNumBytesToCopyNow, nRemainingLength);
 			
+			if (DEBUG) {
+				out("\tnNumBytesToCopyNow: min( " + m_abData.length + " - " + m_nBufferPosition + " , " + nRemainingLength + " )  = " + nNumBytesToCopyNow); 
+				}
+			
 			// the copy
 			System.arraycopy(m_abData, m_nBufferPosition, abData, nOffset, nNumBytesToCopyNow);
+			nBytesActuallyRead += nNumBytesToCopyNow;
 			
 			// update markers
 			nRemainingLength -= nNumBytesToCopyNow;
@@ -218,12 +260,16 @@ public class JROscillator
 		}
 		
 		// return number of bytes actually read
-		int	nReturn = nConstrainedLength;
+		int	nReturn = nBytesActuallyRead;
+		
 		if (m_lRemainingFrames == 0)
 		{
 			nReturn = -1;
 		}
-		if (DEBUG) { out("Oscillator.read(): end"); }
+		if (DEBUG) { 
+			out("nBytesActuallyRead: " + nBytesActuallyRead);
+			out("Oscillator.read(): end"); 
+			}
 		return nReturn;
 	}
 

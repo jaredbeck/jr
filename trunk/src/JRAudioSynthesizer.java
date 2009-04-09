@@ -3,10 +3,15 @@ import javax.sound.sampled.*;
 
 public class JRAudioSynthesizer implements Runnable, JRConManListener {
 	
-	// not sure what is a good buffer size
-	// so far, I have tried 64k and 128k with equal success
-	private static final int BUFFER_SIZE = 64000;
+	// Buffer size
+	// Must be multiple of frame size
+	// 8k seems good
+	private static final int BUFFER_SIZE = 8000;
 	private byte[] abData;
+	
+	// Line buffer size
+	// The smaller the better, so that less stale data accumulates
+	private static final int LINE_BUFFER_SIZE = 16000;
 	
 	// Tree is a model of synth modules and patch cables
 	private JRTree jrTree;
@@ -31,52 +36,12 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 		this.halt = true;
 	}
 	
-	/* refresh()
-	Connection manager event. The tree has been rebuilt.  Data
-	currently in the line buffer is now stale.  If we continue to
-	play stale data, the reactable will appear laggy, or 
-	unresponsive.  So, we must refresh the data in the line.  
-	
-	We could just flush the line, and wait for run() to refill it, but
-	this causes a clicking noise, presumably because there are a few
-	milliseconds with no data? From the javadocs:  "It is legal to flush
-	a line that is not stopped, but doing so on an active line is likely
-	to cause a discontinuity in the data, resulting in a perceptible
-	click." */
-	public void refresh ( ) {
-		//System.out.println( "DEBUG: JRAudioSynthesizer.refresh() begin" );
-		
-		/* Prepare fresh data.  (See run() for more comments on this stuff) */
-		JRNode head = this.jrTree.getHead();
-		if ( head != null ) {
-		
-			int	nRead = readFromNode( head );
-			if (nRead != -1) {
-				//System.out.println("IO: " + nRead + " read from head");
-				swapByteOrder( nRead );				
 
-				/* Stop, Flush, Write, Start 
-				Hopefully quickly enough to avoid a click. */
-				line.stop();
-				line.flush();
-				writeToLine( nRead );
-				line.start();
-			}
-			else {
-				System.out.println( "DEBUG: JRAudioSynthesizer.refresh(): nRead == -1" );
-				line.stop();
-				line.flush();
-			}
-				
-		}
-		else {
-			/* The tree is now empty. */
-			//System.out.println( "DEBUG: JRAudioSynthesizer.refresh(): head == null" );
-			line.stop();
-			line.flush();
-		}
-		
-		//System.out.println( "DEBUG: JRAudioSynthesizer.refresh() end" );
+	public void refresh ( ) {
+		/* If we use a small line buffer, then the line does not accumulate too much
+		stale data, and the refresh event becomes unnecessary. Besides, the javadocs
+		say that flushing an active line can cause clicking noises.  
+		-Jared 4/9/2009 */
 	}
 	
 	
@@ -106,11 +71,11 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 				 sampleRate, 16, 2, 4, sampleRate, false);
 	
 		// Acquire, open, and start a Line
-		DataLine.Info	info = new DataLine.Info( SourceDataLine.class, audioFormat );
+		DataLine.Info	info = new DataLine.Info( SourceDataLine.class, audioFormat, LINE_BUFFER_SIZE );
 		try
 		{
 			line = (SourceDataLine) AudioSystem.getLine(info);
-			line.open(audioFormat);
+			line.open(audioFormat,LINE_BUFFER_SIZE);
 		}
 		catch (LineUnavailableException e)
 		{

@@ -18,8 +18,9 @@ public class JRGenerator extends JRNode {
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		
 		// initialize oscillator
+		boolean readWholePeriods = true;
 		this.oscillator = new JROscillator( 
-			waveform, this.frequency, amplitude, this.audioFormat, lengthInFrames);
+			waveform, this.frequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
 	}
 	
 	public void addChild ( JRNode child ) throws JRInvalidEdgeException {
@@ -80,12 +81,11 @@ public class JRGenerator extends JRNode {
 			// read from oscillator
 			byte[] b1 = new byte[nLength];
 			int nRead = oscillator.read(b1, nOffset, nLength);
-			//System.out.println( "Read " + nRead + " bytes from oscillator" );
 			
 			// read from controller
 			byte[] b2 = new byte[nRead];
 			JRController c = (JRController)this.getFirstChild();
-			int nReadCtrl = c.read(b2, nOffset, nRead); // nRead? nLength?
+			int nReadCtrl = c.read(b2, nOffset, nRead);
 
 			// assertion: equal signal read length
 			if (nRead != nReadCtrl) { 
@@ -227,8 +227,9 @@ public class JRGenerator extends JRNode {
 			long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 	
 			// initialize oscillator
+			boolean readWholePeriods = true;
 			this.oscillator = new JROscillator( 
-				this.waveform, newFrequency, amplitude, this.audioFormat, lengthInFrames);
+				this.waveform, newFrequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
 			
 			// update freq
 			this.frequency = newFrequency;
