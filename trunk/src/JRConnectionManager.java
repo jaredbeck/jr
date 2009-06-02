@@ -229,6 +229,7 @@ public class JRConnectionManager implements TuioListener {
 				n.setSessionID( t.getSessionID() );
 				n.setX( t.getX() );
 				n.setY( t.getY() );
+				n.setAngle( t.getAngleNormalized() );
 				nodes.add( n );
 			}
 			catch (JRException ex) { System.err.println("Error: " + ex.getMessage()); }
@@ -250,10 +251,6 @@ public class JRConnectionManager implements TuioListener {
 
 		//System.out.println("set obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle()+" "+tobj.getMotionSpeed()+" "+tobj.getRotationSpeed()+" "+tobj.getMotionAccel()+" "+tobj.getRotationAccel());
 
-		// get the angle as a float from 0.0 to 1.0
-		float angleNormalized = jrto.getAngle() / (float)( 2 * Math.PI );
-		//System.out.println( "angleNormalized = " + angleNormalized );
-
 		/* acquire reference to JRNode by traversing the tree looking for
 		a session id */
 		JRNode n = this.jrTree.getNode( tobj.getSessionID() );
@@ -261,9 +258,15 @@ public class JRConnectionManager implements TuioListener {
 		// update the properties of the appropriate node in the tree (use mutators)
 		boolean bufferIsNowStale = false;
 		if ( n != null ) { 
-			bufferIsNowStale = n.setAngle( angleNormalized ); }
+			try {
+				bufferIsNowStale = n.setAngle( jrto.getAngleNormalized() ); 
+			}
+			catch ( JRInvalidAngleException e ) {
+				System.err.println( "ERROR: Unable to set angle: " + e.getMessage() );
+			}
+		}		
 		else {
-			System.err.println("Update fail: Unable to find node with ses id " + tobj.getSessionID() + " in the tree");
+			System.err.println("ERROR: Update fail: Unable to find node with ses id " + tobj.getSessionID() + " in the tree");
 		}
 		
 		if (bufferIsNowStale) { refreshNotify(); }

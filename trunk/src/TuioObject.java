@@ -62,6 +62,11 @@ public class TuioObject extends TuioContainer {
 	public float getAngleDegrees() {
 		return angle/(float)Math.PI*180.0f;
 	}
+
+	public float getAngleNormalized() {
+		// returns angle as float from 0.0 to 1.0
+		return angle / (float)( 2 * Math.PI );
+	}
 	
 	public float getRotationSpeed() {
 		return rotation_speed;
