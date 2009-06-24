@@ -29,11 +29,14 @@ public class JRConnectionManager implements TuioListener {
 		
 		// Trivial case: One object
 		else if ( numTuioObjects == 1) { 
-			JRTuioObject tobj = (JRTuioObject)objectList.values().toArray()[0];
+			JRTuioObject t = (JRTuioObject)objectList.values().toArray()[0];
 			try {
-				JRNode newHeadNode = JRNode.getInstance ( tobj.getFiducialID() );
-				newHeadNode.setSessionID( tobj.getSessionID() );
-				jrTree.setHead( newHeadNode ); 
+				JRNode n = JRNode.getInstance ( t.getFiducialID() );
+				n.setSessionID( t.getSessionID() );
+				n.setX( t.getX() );
+				n.setY( t.getY() );
+				n.setAngle( t.getAngleNormalized() );
+				jrTree.setHead( n );
 			}
 			catch (JRInvalidNodeException e) {
 				// Not an error.  It's just that the object doesn't make a good head node.
