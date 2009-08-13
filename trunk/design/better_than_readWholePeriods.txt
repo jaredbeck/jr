@@ -1,0 +1,23 @@
+good idea for JaredReactable
+
+instead of the readWholePeriods argument to Oscillator(), what if the oscillator
+were a little smarter:
+
+say a sine wave oscillator is not set to readWholePeriods, and we read() up to
+about 0.3 amplitude on the downstroke, for example. Then we want to change the
+oscillator frequency (rotating a controller, for example).  We now know that we
+can't just start the next read() at 0.0, because we will get that clicking noise.
+
+What if the oscillator knew that it had stopped at 0.3, on the downstroke, and
+it sort of "fast-forwards" to the 0.3 and read()s from there, but with the new
+frequency?
+
+At worst, if the frequency change is severe, the signal will "bend" but it will
+not "drop off of a cliff" and click.
+
+This same technique will work with more complicated generators also!  As long as
+the generator repeats a pattern, in periods, we can theoretically remember the
+position in the period, maybe as a percentage completed, and restart there.  As
+long as the percentage has enough precision, we should be OK.
+
+This technique would also work fine with sound clips.
