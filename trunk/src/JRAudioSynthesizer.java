@@ -32,7 +32,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 	
 	// halt() - cease execution.  causes run() to shut down
 	public void halt() {
-		//System.out.println("DEBUG: JRAudioSynthesizer: halt()");
+		System.out.println("DEBUG: JRAudioSynthesizer: halt()");
 		this.halt = true;
 	}
 	
@@ -88,7 +88,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 			System.exit(1);
 		}
 		line.start();
-		//System.out.println( "DEBUG: JRAudioSynthesizer: Line started .." );
+		System.out.println( "DEBUG: JRAudioSynthesizer: Line started .." );
 	
 		while ( !halt ) {
 			//System.out.println( "DEBUG: JRAudioSynthesizer: is running .." );
@@ -104,7 +104,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 				if (nRead == -1) {
 					try { Thread.sleep(33); }
 					catch (InterruptedException e) { 
-						System.err.println("JRAudioSynthesizer: Caught unexpected interrupt:" + e.getMessage());
+						System.err.println("JRAudioSynthesizer: Unexpected InterruptedException:" + e.getMessage());
 						break;
 					}	
 				}
@@ -124,8 +124,8 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 				
 			} // end if ( head != null )
 			
-			// Because there is no head yet, we sleep() instead of yield()ing.  
-			// This massively reduces CPU useage.
+			// Because there is no head yet, we sleep() 
+			// Note that sleep()ing instead of yield()ing massively reduces CPU useage
 			try { Thread.sleep(33); }
 			catch (InterruptedException e) { 
 				System.err.println("JRAudioSynthesizer: Caught unexpected interrupt:" + e.getMessage());
@@ -136,7 +136,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 		line.stop();
 		line.flush();
 		
-		//System.out.println("DEBUG: JRAudioSynthesizer: Exiting ..");
+		System.out.println("DEBUG: JRAudioSynthesizer: Exiting ..");
 	}
 
 	
