@@ -27,8 +27,8 @@ public class JROscillator
 	/* readWholePeriods - read() normally copies a period at a time to the
 	provided buffer. Normally, partial periods will be copied in order to
 	completely fill the provided buffer. If readWholePeriods is true, then read()
-	will only copy, whole periods to the provided buffer. Currently, generators
-	only comp whole periods, while controllers are allowed to copy partial periods. 
+	will only copy whole periods to the provided buffer. Currently, generators
+	only copy whole periods, while controllers are allowed to copy partial periods. 
 	This is sort of a workaround for now.  When a rotation action is defined for
 	controllers, this workaround will no longer be enough of a solution.
 	-Jared 4/9/2009 */
@@ -52,7 +52,7 @@ public class JROscillator
 				      audioFormat.isBigEndian()),
 		      lLength);
 		      
-		if (DEBUG) { out("Oscillator.<init>(): begin"); }
+		if (DEBUG) { out("DEBUG: Oscillator(): begin"); }
 		
 		this.readWholePeriods = arg_readWholePeriods;
 		
@@ -60,9 +60,12 @@ public class JROscillator
 		fAmplitude = (float) (fAmplitude * Math.pow(2, getFormat().getSampleSizeInBits() - 1));
 		
 		// length of one period in frames
-		int nPeriodLengthInFrames = Math.round(getFormat().getFrameRate() / fSignalFrequency);
-		//System.out.println("Oscillator.init() nPeriodLengthInFrames = " + nPeriodLengthInFrames);
+		int nPeriodLengthInFrames = Math.round( getFormat().getFrameRate() / fSignalFrequency );
+		if (DEBUG) { out("DEBUG: Oscillator(): nPeriodLengthInFrames = " + nPeriodLengthInFrames); }
+
+		// buffer length will be one period
 		int nBufferLength = nPeriodLengthInFrames * getFormat().getFrameSize();
+		if (DEBUG) { out("DEBUG: Oscillator(): period length in bytes = " + nBufferLength); }
 		
 		// fill buffer with one period of PCM data
 		m_abData = new byte[nBufferLength];
@@ -117,6 +120,8 @@ public class JROscillator
 			//System.out.println(fValue + " * " + fAmplitude + " = " + nValue);
 			int nBaseAddr = (nFrame) * getFormat().getFrameSize();
 			
+			//if (DEBUG) { out("DEBUG: Oscillator(): build period: " + nBaseAddr + " = " + nValue); }
+			
 			// Write to buffer as:
 			// 16 bit stereo, big endian
 			if ( audioFormat.isBigEndian() ) {
@@ -136,7 +141,7 @@ public class JROscillator
 			//System.out.println(nValue + " = " + (byte) (nValue & 0xFF) + " " + (byte) ((nValue >>> 8) & 0xFF) );
 		}
 		m_nBufferPosition = 0;
-		if (DEBUG) { out("Oscillator.<init>(): end"); }
+		if (DEBUG) { out("DEBUG: Oscillator(): end"); }
 	}
 
 
@@ -162,7 +167,47 @@ public class JROscillator
 		}
 		return nAvailable;
 	}
+	
 
+	/* getAmplitudeAtPosition returns an integer value representing
+	the amplitude at a given position in the period.  It only returns the 
+	left channel, and it assumes 16-bit 2-channel frames.  It's only
+	meant to be used for debugging.
+	*/
+	private int getAmplitudeAtPosition( int bufferPositionInBytes ) {
+		return (m_abData[bufferPositionInBytes] << 8) | (m_abData[bufferPositionInBytes+1] & 0xFF);
+		}
+	
+	
+	public float getBufferPosition() {
+		return (float)m_nBufferPosition / (float)m_abData.length;
+	}
+
+
+	public void setBufferPosition(float relativePosition) {
+	
+		// Given a relative position from 0.0 to 1.0
+		if (relativePosition < 0.0 || relativePosition > 1.0) {
+			System.err.println("ERROR: relative position out of bounds");
+			System.exit(1);
+		}
+	
+		/* Calculate new buffer position in bytes.  Find the frame which is 
+		nearest to the relative position. */
+		int approxNewBufPos = Math.round(m_abData.length * relativePosition);
+		int approxOffsetFromNearestFrame = approxNewBufPos % getFormat().getFrameSize();
+		int newBufferPosition = approxNewBufPos - approxOffsetFromNearestFrame;
+		
+		// Make sure the new position is valid
+		if (newBufferPosition % getFormat().getFrameSize() != 0) {
+			System.err.println("ERROR: newBufferPosition must be an integer multiple of frame size");
+			System.exit(1);
+		}
+		
+		// Set buffer position
+		m_nBufferPosition = newBufferPosition;
+		if (DEBUG) { out("DEBUG: Oscillator.setBufferPosition(): m_nBufferPosition = " + m_nBufferPosition); }
+	}
 
 
 	/*
@@ -173,7 +218,7 @@ public class JROscillator
 	public int read()
 		throws IOException
 	{
-		if (DEBUG) { out("Oscillator.read(): begin"); }
+		if (DEBUG) { out("DEBUG: Oscillator.read(): begin"); }
 		throw new IOException("cannot use this method currently");
 	}
 
@@ -182,7 +227,7 @@ public class JROscillator
 	public int read(byte[] abData, int nOffset, int nLength)
 		throws IOException
 	{
-		if (DEBUG) { out("Oscillator.read(): begin"); }
+		if (DEBUG) { out("DEBUG: Oscillator.read(): begin"); }
 		
 		// is the requested length valid?
 		if (nLength % getFormat().getFrameSize() != 0)
@@ -195,10 +240,13 @@ public class JROscillator
 		int	nRemainingLength = nConstrainedLength;
 
 		if (DEBUG) { 
-			out("available: " + available()); 
-			out("constrained: " + nConstrainedLength); 
-			out("nRemainingLength: " + nRemainingLength);
-			out("m_abData.length: " + m_abData.length);
+			out("DEBUG: Oscillator.read(): available: " + available()); 
+			out("DEBUG: Oscillator.read(): constrained: " + nConstrainedLength); 
+			out("DEBUG: Oscillator.read(): nRemainingLength: " + nRemainingLength);
+			out("DEBUG: Oscillator.read(): m_abData.length: " + m_abData.length);
+			out("DEBUG: Oscillator.read(): m_nBufferPosition: " + m_nBufferPosition);
+			int debugamp = getAmplitudeAtPosition(m_nBufferPosition);
+			out("DEBUG: Oscillator.read(): first two bytes at m_nBufferPosition: " + debugamp);
 			}
 		
 		// keep track of how many bytes are actually copied
@@ -216,7 +264,7 @@ public class JROscillator
 		{
 		
 			if (DEBUG) { 
-				out("copy pass begin"); 
+				out("DEBUG: copy pass begin"); 
 				out("\tnRemainingLength: " + nRemainingLength); 
 				}
 		
@@ -242,11 +290,16 @@ public class JROscillator
 			nRemainingLength -= nNumBytesToCopyNow;
 			nOffset += nNumBytesToCopyNow;
 			
-			// This line below has some serious wizardry in it!
+			// This line below is quite clever.
 			// Basically, if we didn't copy all of the Oscillator's buffer (all of a period)
 			// then we save the buffer position, part-way through, for next time a read() happens.
 			// That way, we pick up where we left off.
 			m_nBufferPosition = (m_nBufferPosition + nNumBytesToCopyNow) % m_abData.length;
+			
+			if (DEBUG) { 
+				out("\tm_nBufferPosition: " + m_nBufferPosition); 
+				out("DEBUG: copy pass end"); 
+				}
 		}
 		
 		// calculate frames read
@@ -267,14 +320,19 @@ public class JROscillator
 			nReturn = -1;
 		}
 		if (DEBUG) { 
-			out("nBytesActuallyRead: " + nBytesActuallyRead);
-			out("Oscillator.read(): end"); 
+			out("DEBUG: Oscillator.read(): nBytesActuallyRead = " + nBytesActuallyRead);
+			out("DEBUG: Oscillator.read(): m_nBufferPosition: " + m_nBufferPosition);
+			if (m_nBufferPosition > 0) {
+				int lastFramePos = m_nBufferPosition - getFormat().getFrameSize();
+				int debugamp = getAmplitudeAtPosition(lastFramePos);
+				out("DEBUG: Oscillator.read(): amplitude of last frame: " + debugamp);
+				}
+			out("DEBUG: Oscillator.read(): end"); 
 			}
 		return nReturn;
 	}
 
-
-
+	
 	private static void out(String strMessage)
 	{
 		System.out.println(strMessage);

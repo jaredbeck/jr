@@ -187,9 +187,8 @@ public abstract class JRNode extends AudioInputStream {
 	public void setX ( float x ) { this.xpos = x; }
 	public void setY ( float y ) { this.ypos = y; }	
 	
-	public boolean setAngle ( float a ) throws JRInvalidAngleException { 
-		/* Overwrite setAngle() in the child classes */ 
-		return false;
-		}	
+	public void setAngle ( float a ) throws JRInvalidAngleException {
+		return;
+	}
 
 }

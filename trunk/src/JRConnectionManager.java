@@ -259,10 +259,9 @@ public class JRConnectionManager implements TuioListener {
 		JRNode n = this.jrTree.getNode( tobj.getSessionID() );
 		
 		// update the properties of the appropriate node in the tree (use mutators)
-		boolean bufferIsNowStale = false;
 		if ( n != null ) { 
 			try {
-				bufferIsNowStale = n.setAngle( jrto.getAngleNormalized() ); 
+				n.setAngle( jrto.getAngleNormalized() ); 
 			}
 			catch ( JRInvalidAngleException e ) {
 				System.err.println( "ERROR: Unable to set angle: " + e.getMessage() );
@@ -271,8 +270,6 @@ public class JRConnectionManager implements TuioListener {
 		else {
 			System.err.println("ERROR: Update fail: Unable to find node with ses id " + tobj.getSessionID() + " in the tree");
 		}
-		
-		if (bufferIsNowStale) { refreshNotify(); }
 	}
 	
 	private void refreshNotify() {

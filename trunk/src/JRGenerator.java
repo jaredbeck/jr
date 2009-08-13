@@ -5,7 +5,7 @@ import javax.sound.sampled.*;
 public class JRGenerator extends JRNode {
 
 	private int waveform;
-	private AudioInputStream oscillator;
+	private JROscillator oscillator;
 	private float frequency;
 	
 	public JRGenerator ( int waveform ) {
@@ -18,7 +18,7 @@ public class JRGenerator extends JRNode {
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		
 		// initialize oscillator
-		boolean readWholePeriods = true;
+		boolean readWholePeriods = false;
 		this.oscillator = new JROscillator( 
 			waveform, this.frequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
 	}
@@ -201,22 +201,18 @@ public class JRGenerator extends JRNode {
 		return r;
 	}
 
-	// setAngle() returns true if it chages something,
-	// resulting in a stale buffer
-	public boolean setAngle ( float a ) throws JRInvalidAngleException {
+
+	public void setAngle ( float a ) throws JRInvalidAngleException {
 		if ( a < 0.0 || a > 1.0 ) { 
 			throw new JRInvalidAngleException ( "Invalid angle" ); 
 		}
 		// new frequency in range from 500-800 Hz
 		float newFrequency = 500.0F + (300.0F * a);
-		return this.setFrequency( newFrequency );		
+		this.setFrequency( newFrequency );		
 	}
 
-	// setFrequency() returns true if it chages something,
-	// resulting in a stale buffer	
-	public boolean setFrequency ( float newFrequency ) {
-	
-		boolean bufferIsNowStale = false;
+
+	public void setFrequency ( float newFrequency ) {
 	
 		/* TODO: There is a thread safety problem here. I want to replace
 		the oscillator, but what if the syth is reading from it at the
@@ -225,21 +221,24 @@ public class JRGenerator extends JRNode {
 		// Frequency change must be big enough to be worth the effort
 		if ( Math.abs( newFrequency - this.frequency ) > 10.0 ) {
 			
+			// remember the current oscillator buffer position
+			float oscbufpos = this.oscillator.getBufferPosition();
+			
 			// unchanged waveform properties
 			float	amplitude = 0.7F;
 			long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 	
 			// initialize oscillator
-			boolean readWholePeriods = true;
+			boolean readWholePeriods = false;
 			this.oscillator = new JROscillator( 
 				this.waveform, newFrequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
 			
+			// restore oscillator buffer position (to prevent clicking noise)
+			this.oscillator.setBufferPosition(oscbufpos);
+			
 			// update freq
 			this.frequency = newFrequency;
-			bufferIsNowStale = true;
 		}
-		
-		return bufferIsNowStale;
 	}
 
 }
