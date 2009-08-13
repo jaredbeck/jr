@@ -7,7 +7,7 @@ public class ShutdownInterceptor extends Thread {
 	}
 	
 	public void run() {
-		//System.out.println("DEBUG: ShutdownInterceptor: Call the shutdown routine");
+		System.out.println("DEBUG: ShutdownInterceptor: Call the shutdown routine");
 		app.shutDown();
 	}
 

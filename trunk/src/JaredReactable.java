@@ -40,7 +40,7 @@ public class JaredReactable implements IApp {
 	}
 
 	public void shutDown() {
-		//System.out.println("DEBUG: JaredReactable: Shutting down ..");
+		System.out.println("DEBUG: JaredReactable: Shutting down ..");
 		this.jrTuioClient.disconnect();
 		this.jrAudioSynthesizer.halt();
 		
@@ -49,7 +49,7 @@ public class JaredReactable implements IApp {
 		try { Thread.sleep(100); }
 		catch (InterruptedException e) { System.err.println("Unexpected interrupt:" + e.getMessage()); }
 		
-		//System.out.println("DEBUG: JaredReactable: Exiting ..");
+		System.out.println("DEBUG: JaredReactable: Exiting ..");
 	}
 
 	public static void main ( String[] args ) {
