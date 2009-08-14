@@ -103,6 +103,9 @@ public abstract class JRNode extends AudioInputStream {
 		else if ( fiducialID == 8 ) {
 			return new JRController( JROscillator.WAVEFORM_TRIANGLE );
 		}
+		else if ( fiducialID == 9 ) {
+			return new JRController( JROscillator.WAVEFORM_ENVELOPE );
+		}
 		else {
 			throw new JRException( "Unknown fiducial ID in JRNode.getInstance()" );
 		}

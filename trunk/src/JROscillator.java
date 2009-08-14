@@ -19,10 +19,31 @@ public class JROscillator
 	public static final int WAVEFORM_TRIANGLE = 2;
 	public static final int WAVEFORM_SAWTOOTH = 3;
 	public static final int WAVEFORM_HALF_SQUARE = 4;
+	public static final int WAVEFORM_ENVELOPE = 5;
 
 	private byte[]			m_abData;
 	private int			m_nBufferPosition;
 	private long			m_lRemainingFrames;
+	
+	private float attack_start_pos = 0.0F;
+	private float attack_end_pos = 0.1F;
+	private float attack_amplitude = 1.0F;
+	private String attack_shape = "linear";
+	
+	private float sustain_start_pos = 0.1F;
+	private float sustain_end_pos = 0.2F;
+	private float sustain_amplitude = 0.2F;
+	private String sustain_shape = "linear";
+	
+	private float decay_start_pos = 0.2F;
+	private float decay_end_pos = 0.8F;
+	private float decay_amplitude = 0.1F;
+	private String decay_shape = "linear";
+	
+	private float release_start_pos = 0.8F;
+	private float release_end_pos = 0.9F;
+	private float release_amplitude = 0.0F; // always zero
+	private String release_shape = "linear";
 	
 	/* readWholePeriods - read() normally copies a period at a time to the
 	provided buffer. Normally, partial periods will be copied in order to
@@ -56,28 +77,67 @@ public class JROscillator
 		
 		this.readWholePeriods = arg_readWholePeriods;
 		
+		// envelope stuff
+		float attack_length = attack_end_pos - attack_start_pos;
+		float sustain_length = sustain_end_pos - sustain_start_pos;
+		float decay_length = decay_end_pos - decay_start_pos;
+		float release_length = release_end_pos - release_start_pos;
+		
+		// some oscillator attributes
 		m_lRemainingFrames = lLength;
 		fAmplitude = (float) (fAmplitude * Math.pow(2, getFormat().getSampleSizeInBits() - 1));
 		
 		// length of one period in frames
 		int nPeriodLengthInFrames = Math.round( getFormat().getFrameRate() / fSignalFrequency );
-		if (DEBUG) { out("DEBUG: Oscillator(): nPeriodLengthInFrames = " + nPeriodLengthInFrames); }
+		out("DEBUG: Oscillator(): getFormat().getFrameRate() = " + getFormat().getFrameRate());
+		out("DEBUG: Oscillator(): fSignalFrequency = " + fSignalFrequency);
+		out("DEBUG: Oscillator(): nPeriodLengthInFrames = " + nPeriodLengthInFrames);
 
 		// buffer length will be one period
 		int nBufferLength = nPeriodLengthInFrames * getFormat().getFrameSize();
-		if (DEBUG) { out("DEBUG: Oscillator(): period length in bytes = " + nBufferLength); }
+		out("DEBUG: Oscillator(): period length in bytes = " + nBufferLength);
 		
 		// fill buffer with one period of PCM data
 		m_abData = new byte[nBufferLength];
 		for (int nFrame = 0; nFrame < nPeriodLengthInFrames; nFrame++)
 		{
-			/**	The relative position inside the period
-				of the waveform. 0.0 = beginning, 1.0 = end
-			*/
+			// The relative position inside the period of the waveform: 0.0 to 1.0
 			float	fPeriodPosition = (float) nFrame / (float) nPeriodLengthInFrames;
+			
+			// Calculate the sample value for this frame
 			float	fValue = 0;
 			switch (nWaveformType)
 			{
+			case WAVEFORM_ENVELOPE:
+				// only support linear envelope shapes so far
+				if (fPeriodPosition >= attack_start_pos && 
+						fPeriodPosition <= attack_end_pos) {
+					fValue = fPeriodPosition * attack_amplitude / attack_length;
+					}
+				else if (fPeriodPosition >= sustain_start_pos && 
+						fPeriodPosition <= sustain_end_pos) {
+					float slope = (sustain_amplitude - attack_amplitude) / sustain_length;
+					float b = sustain_amplitude - (slope * sustain_end_pos);
+					fValue = slope * fPeriodPosition + b;
+					}
+				else if (fPeriodPosition >= decay_start_pos && 
+						fPeriodPosition <= decay_end_pos) {
+					float slope = (decay_amplitude - sustain_amplitude) / decay_length;
+					float b = decay_amplitude - (slope * decay_end_pos);
+					fValue = slope * fPeriodPosition + b;
+					}
+				else if (fPeriodPosition >= release_start_pos && 
+						fPeriodPosition <= release_end_pos) {
+					float slope = (release_amplitude - decay_amplitude) / release_length;
+					float b = release_amplitude - (slope * release_end_pos);
+					fValue = slope * fPeriodPosition + b;
+					}
+				else {
+					fValue = 0.0F;
+					}
+				//out("ENVELOPE: pos = " + fPeriodPosition + "\t value = " + fValue);
+				break;
+				
 			case WAVEFORM_SINE:
 				fValue = (float) Math.sin(fPeriodPosition * 2.0 * Math.PI);
 				break;
@@ -120,7 +180,7 @@ public class JROscillator
 			//System.out.println(fValue + " * " + fAmplitude + " = " + nValue);
 			int nBaseAddr = (nFrame) * getFormat().getFrameSize();
 			
-			//if (DEBUG) { out("DEBUG: Oscillator(): build period: " + nBaseAddr + " = " + nValue); }
+			//out("DEBUG: Oscillator(): build period: " + nBaseAddr + " = " + nValue);
 			
 			// Write to buffer as:
 			// 16 bit stereo, big endian

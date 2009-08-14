@@ -4,7 +4,10 @@ import javax.sound.sampled.*;
 public class JRController extends JRNode {
 	
 	private static final float defaultAmplitude = 1.0F;
-	private static final float defaultFrequency = 2.0F; // the range 0.5 to 8 is most useful
+	
+	// re: frequency, the range 0.5 to 8 is most useful
+	// much below 0.5 and the oscillator buffer gets quite expensive
+	private static final float defaultFrequency = 0.5F; 
 
 	private AudioInputStream oscillator;
 
