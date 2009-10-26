@@ -52,10 +52,12 @@ public class JRTuioClient implements OSCListener {
 	}
 	
 	public void disconnect() {
+		System.out.println("DEBUG: JRTuioClient: disconnect() begin");
 		oscPort.stopListening();
 		try { Thread.sleep(100); }
 		catch (Exception e) {};
 		oscPort.close();
+		System.out.println("DEBUG: JRTuioClient: disconnect() end");
 	}
 	
 	public void addTuioListener(TuioListener listener) {

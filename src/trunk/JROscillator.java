@@ -89,13 +89,13 @@ public class JROscillator
 		
 		// length of one period in frames
 		int nPeriodLengthInFrames = Math.round( getFormat().getFrameRate() / fSignalFrequency );
-		out("DEBUG: Oscillator(): getFormat().getFrameRate() = " + getFormat().getFrameRate());
-		out("DEBUG: Oscillator(): fSignalFrequency = " + fSignalFrequency);
-		out("DEBUG: Oscillator(): nPeriodLengthInFrames = " + nPeriodLengthInFrames);
+		//out("DEBUG: Oscillator(): getFormat().getFrameRate() = " + getFormat().getFrameRate());
+		//out("DEBUG: Oscillator(): fSignalFrequency = " + fSignalFrequency);
+		//out("DEBUG: Oscillator(): nPeriodLengthInFrames = " + nPeriodLengthInFrames);
 
 		// buffer length will be one period
 		int nBufferLength = nPeriodLengthInFrames * getFormat().getFrameSize();
-		out("DEBUG: Oscillator(): period length in bytes = " + nBufferLength);
+		//out("DEBUG: Oscillator(): period length in bytes = " + nBufferLength);
 		
 		// fill buffer with one period of PCM data
 		m_abData = new byte[nBufferLength];
