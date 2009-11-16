@@ -31,12 +31,16 @@ public class JRConnectionManager implements TuioListener {
 		else if ( numTuioObjects == 1) { 
 			JRTuioObject t = (JRTuioObject)objectList.values().toArray()[0];
 			try {
-				JRNode n = JRNode.getInstance ( t.getFiducialID() );
+				JRNode n = JRNode.getInstance( t.getFiducialID() );
 				n.setSessionID( t.getSessionID() );
 				n.setX( t.getX() );
 				n.setY( t.getY() );
 				n.setAngle( t.getAngleNormalized() );
 				jrTree.setHead( n );
+			}
+			catch (JRUnknownFiducialException e) {
+				// Not an error, but the fiducial ID is unknown
+				jrTree.clear();
 			}
 			catch (JRInvalidNodeException e) {
 				// Not an error.  It's just that the object doesn't make a good head node.
@@ -249,16 +253,20 @@ public class JRConnectionManager implements TuioListener {
 	}
 
 	public void updateTuioObject(TuioObject tobj) {
-		JRTuioObject jrto = (JRTuioObject)objectList.get(tobj.getSessionID());
-		jrto.update(tobj);
-
 		//System.out.println("set obj "+tobj.getFiducialID()+" ("+tobj.getSessionID()+") "+tobj.getX()+" "+tobj.getY()+" "+tobj.getAngle()+" "+tobj.getMotionSpeed()+" "+tobj.getRotationSpeed()+" "+tobj.getMotionAccel()+" "+tobj.getRotationAccel());
+	
+		/* This method updates the given TUIO object in two places:
+		the TUIO object list, and the tree.  Note that the nodes of the tree
+		can be a subset of the elements of the list, eg. when the list contains
+		an unknown fiducial ID, that object will not be added to the tree. */
+	
+		/* Update the object in the TUIO object list.  If the TUIO object list does
+		not contain an object with the given session ID, that is an error. */
+		JRTuioObject jrto = (JRTuioObject)objectList.get(tobj.getSessionID());
+		jrto.update(tobj);	
 
-		/* acquire reference to JRNode by traversing the tree looking for
-		a session id */
+		/* Update the appropriate node in the tree. */
 		JRNode n = this.jrTree.getNode( tobj.getSessionID() );
-		
-		// update the properties of the appropriate node in the tree (use mutators)
 		if ( n != null ) { 
 			try {
 				n.setAngle( jrto.getAngleNormalized() ); 
@@ -268,7 +276,8 @@ public class JRConnectionManager implements TuioListener {
 			}
 		}		
 		else {
-			System.err.println("ERROR: Update fail: Unable to find node with ses id " + tobj.getSessionID() + " in the tree");
+			// not an error.  for example, unknown fiducial IDs are not added to the tree
+			System.err.println("DEBUG: Update fail: Unable to find node with ses id " + tobj.getSessionID() + " in the tree");
 		}
 	}
 	

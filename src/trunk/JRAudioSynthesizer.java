@@ -99,7 +99,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 		System.out.println( "DEBUG: JRAudioSynthesizer: Line started .." );*/
 	
 		while ( !stopSynth ) {
-			System.out.println( "DEBUG: JRAudioSynthesizer: is running (stopSynth = " + this.stopSynth + ") .." );
+			// System.out.println( "DEBUG: JRAudioSynthesizer: is running (stopSynth = " + this.stopSynth + ") .." );
 			
 			// does the tree have a head?
 			JRNode head = this.jrTree.getHead();
@@ -119,7 +119,7 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 					}	*/
 				}
 				else {
-					System.out.println("IO: " + nRead + " read from head");
+					//System.out.println("IO: " + nRead + " read from head");
 				
 					// swap byte order to little endian, 
 					// because Jared's hardware is little endian
@@ -184,12 +184,12 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 
 	
 	private int writeToLine ( int length ) {
-		System.out.println("DEBUG: JRAudioSynthesizer: begin writeToLine(" + length + ")");
-		System.out.println("LINE: open = " + line.isOpen() + ", active = " + line.isActive() + ", running = " + line.isRunning());
-		System.out.println("IO: Line buffer available " + line.available() + " / " + line.getBufferSize());		
+		//System.out.println("DEBUG: JRAudioSynthesizer: begin writeToLine(" + length + ")");
+		//System.out.println("LINE: open = " + line.isOpen() + ", active = " + line.isActive() + ", running = " + line.isRunning());
+		//System.out.println("IO: Line buffer available " + line.available() + " / " + line.getBufferSize());		
 		int	nWritten = line.write(abData, 0, length);
-		System.out.println("IO: " + nWritten + " written to line");
-		System.out.flush();
+		//System.out.println("IO: " + nWritten + " written to line");
+		//System.out.flush();
 		return nWritten;
 	}
 	

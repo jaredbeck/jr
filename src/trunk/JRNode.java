@@ -107,7 +107,7 @@ public abstract class JRNode extends AudioInputStream {
 			return new JRController( JROscillator.WAVEFORM_ENVELOPE );
 		}
 		else {
-			throw new JRException( "Unknown fiducial ID in JRNode.getInstance()" );
+			throw new JRUnknownFiducialException( "Unknown fiducial ID in JRNode.getInstance()" );
 		}
 	}
 	

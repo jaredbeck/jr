@@ -53,6 +53,9 @@ public class JRTree {
 	}
 	
 	public synchronized JRNode getNode ( long sessionID ) {
+		// if the tree is empty, return null
+		if ( this.head == null ) { return null; }
+		// else traverse the tree looking for the given sessionID
 		return this.getNode( sessionID, this.head );
 	}
 	
