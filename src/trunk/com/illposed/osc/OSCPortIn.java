@@ -59,7 +59,7 @@ public class OSCPortIn extends OSCPort implements Runnable {
 		byte[] buffer = new byte[1536];
 		DatagramPacket packet = new DatagramPacket(buffer, 1536);
 		while (isListening) {
-			System.out.println("DEBUG: OSCPortIn: is running ..");
+			//System.out.println("DEBUG: OSCPortIn: is running ..");
 			try {
 				packet.setLength(1536);
 				socket.receive(packet);
