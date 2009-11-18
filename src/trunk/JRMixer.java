@@ -23,6 +23,8 @@ public class JRMixer extends JRNode {
 
 	public int read(byte[] abData, int nOffset, int nLength) throws IOException {
 	
+		int nRead;
+	
 		// Requested length must be multiple of frame size
 		if (nLength % getFormat().getFrameSize() != 0) {
 			throw new IOException("length must be an integer multiple of frame size");
@@ -30,8 +32,7 @@ public class JRMixer extends JRNode {
 		
 		// No audio input
 		if ( this.getNumSatisfiedAudioInputs() == 0 ) {
-			return -1;
-			//throw new IOException("JRMixer.read() is unsupported when getNumSatisfiedAudioInputs() == 0"); 
+			nRead = -1;
 		}
 		
 		// One child
@@ -43,23 +44,73 @@ public class JRMixer extends JRNode {
 			while ( ci.hasNext() ) {
 				c = (JRNode)ci.next();
 				if ( c.getNumAudioOutputs() == 1 ) break;
-				}
+			}
 
 			// read from audio input
-			int nRead = c.read(abData, nOffset, nLength);
-			
-			// assertion: frame size is four bytes
-			if (nRead % 4 != 0) {
-				throw new IOException ( "Assertion failed: invalid number of bytes read (" + nRead + ")" ); 
-			}
-			
-			return nRead;
+			nRead = c.read(abData, nOffset, nLength);
 		}
 		
 		// More than one audio input
 		else {
-			throw new IOException("JRMixer.read(byte[], int, int) is unsupported when getNumSatisfiedAudioInputs() > 1");
+		
+			/* We will read from each of the children with an audio output, 
+			taking the sum of what is read. */
+			short[] arSums = new short[nLength];
+		
+			// start by zeroing the sums buffer
+			for (int z = 1; z < nLength; z++) {
+				arSums[z] = 0;
+			}
+		
+			// For each child with an audio output
+			byte[] arChildData = new byte[nLength];
+			Iterator ci = this.getChildIterator();
+			int lastReadLen = -1;
+			byte countMixedChildren = 0;
+			while ( ci.hasNext() ) {
+				JRNode c = (JRNode)ci.next();
+				if ( c.getNumAudioOutputs() == 1 ) {
+					countMixedChildren++;
+					int thisReadLen = c.read(arChildData, nOffset, nLength);
+					if ( lastReadLen == -1 ^ thisReadLen == lastReadLen ) {
+						lastReadLen = thisReadLen;
+					}
+					else {
+						throw new IOException( "Assertion failed: read length mismatch" );
+					}
+					for (int p = 0; p < lastReadLen; p++) {
+						arSums[p] += arChildData[p];
+					}
+				}
+			}
+			
+			// Assertion
+			if (lastReadLen == -1) { 
+				throw new IOException( "Assertion failed: No read occurred" ); 
+			}
+			else {
+				nRead = lastReadLen;
+			}
+			
+			// Populate the provided buffer with normalized sums
+			for (int p = 1; p < nRead; p++) {
+				byte normalizedSum = (byte) Math.floor( arSums[p] / countMixedChildren );
+				if ( normalizedSum < -128 || normalizedSum > 128 ) {
+					throw new IOException( "Assertion failed: normalized sum out of range" );
+				}
+				abData[p] = normalizedSum;
+			}
+
+			
 		}
+			
+		// assert that return value is -1 or 
+		// multiple of four (frame size is four bytes)
+		if (nRead % 4 != 0) {
+			throw new IOException ( "Assertion failed: invalid number of bytes read (" + nRead + ")" ); 
+		}
+		
+		return nRead;
 	}
 
 
