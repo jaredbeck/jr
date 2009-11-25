@@ -9,7 +9,9 @@ public class JRController extends JRNode {
 	// much below 0.5 and the oscillator buffer gets quite expensive
 	private static final float defaultFrequency = 0.5F; 
 
-	private AudioInputStream oscillator;
+	private JROscillator oscillator;
+	private float frequency;
+	private int waveform;
 
 	// Convenience constructors
 	public JRController ( ) { 
@@ -30,13 +32,15 @@ public class JRController extends JRNode {
 		
 		/* Allow partial period oscillator read()s.  We can't require whole period
 		read()s because the typical controller's period is around 80000 bytes long,
-		much bigger than the audio synthesizer's line buffer. This is a temporary
-		workaround.  When a rotation action or proximity effect is defined for
-		controllers, we will probably experience the same clicking noises that used
-		to come from generators.  */
+		much bigger than the audio synthesizer's line buffer. */
+		/* Happily, we no longer need the readWholePeriods workaround anyway, now
+		that setFrequency() restores oscillator buffer position after swapping
+		oscillators. -Jared 11/24/09 */
 		boolean readWholePeriods = false;
 		
 		// initialize oscillator
+		this.frequency = frequency;
+		this.waveform = waveform;
 		long lengthInFrames = AudioSystem.NOT_SPECIFIED;
 		this.oscillator = new JROscillator( 
 			waveform, frequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
@@ -59,6 +63,41 @@ public class JRController extends JRNode {
 		}
 		else {
 			throw new IOException ( "JRController.read() not supported when degree > 0" );
+		}
+	}
+
+	public void setAngle ( float a ) throws JRInvalidAngleException {
+		// new frequency in range from 0.5 to 8 Hz
+		float newFrequency = 0.5F + (7.5F * a);
+		this.setFrequency( newFrequency );		
+	}
+
+	public void setFrequency ( float newFrequency ) {
+	
+		/* TODO: There is a thread safety problem here. I want to replace
+		the oscillator, but what if the syth is reading from it at the
+		same time.  This is bound to happen sooner or later */
+		
+		// Frequency change must be big enough to be worth the effort
+		if ( Math.abs( newFrequency - this.frequency ) > 0.5 ) {
+			
+			// remember the current oscillator buffer position
+			float oscbufpos = this.oscillator.getBufferPosition();
+			
+			// unchanged waveform properties
+			float	amplitude = JRController.defaultAmplitude;
+			long lengthInFrames = AudioSystem.NOT_SPECIFIED;
+	
+			// initialize oscillator
+			boolean readWholePeriods = false;
+			this.oscillator = new JROscillator( 
+				this.waveform, newFrequency, amplitude, this.audioFormat, lengthInFrames, readWholePeriods);
+			
+			// restore oscillator buffer position (to prevent clicking noise)
+			this.oscillator.setBufferPosition(oscbufpos);
+			
+			// update freq
+			this.frequency = newFrequency;
 		}
 	}
 

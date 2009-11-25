@@ -203,9 +203,6 @@ public class JRGenerator extends JRNode {
 
 
 	public void setAngle ( float a ) throws JRInvalidAngleException {
-		if ( a < 0.0 || a > 1.0 ) { 
-			throw new JRInvalidAngleException ( "Invalid angle" ); 
-		}
 		// new frequency in range from 500-800 Hz
 		float newFrequency = 500.0F + (300.0F * a);
 		this.setFrequency( newFrequency );		

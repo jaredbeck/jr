@@ -191,6 +191,9 @@ public abstract class JRNode extends AudioInputStream {
 	public void setY ( float y ) { this.ypos = y; }	
 	
 	public void setAngle ( float a ) throws JRInvalidAngleException {
+		if ( a < 0.0 || a > 1.0 ) { 
+			throw new JRInvalidAngleException ( "Invalid angle" ); 
+		}
 		return;
 	}
 

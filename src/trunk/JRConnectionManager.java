@@ -227,6 +227,8 @@ public class JRConnectionManager implements TuioListener {
 	}
 	
 	private AbstractSet<JRNode> getNodes() {
+		/* Instantiate a JRNode for each of the TUIO objects, 
+		and build an AbstractSet */
 		HashSet<JRNode> nodes = new HashSet<JRNode>();
 		Enumeration e = objectList.keys();
 		while ( e.hasMoreElements() ) {

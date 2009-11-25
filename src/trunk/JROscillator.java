@@ -48,13 +48,10 @@ public class JROscillator
 	/* readWholePeriods - read() normally copies a period at a time to the
 	provided buffer. Normally, partial periods will be copied in order to
 	completely fill the provided buffer. If readWholePeriods is true, then read()
-	will only copy whole periods to the provided buffer. Currently, generators
-	only copy whole periods, while controllers are allowed to copy partial periods. 
-	This is sort of a workaround for now.  When a rotation action is defined for
-	controllers, this workaround will no longer be enough of a solution.
-	-Jared 4/9/2009 */
+	will only copy whole periods to the provided buffer. -Jared 4/9/2009 */
+	/* This was a workaround. I have since found a better solution.  All of
+	my oscilator-based nodes now have readWholePeriods = false -Jared 11/24/09 */
 	private boolean readWholePeriods;
-
 
 	public JROscillator(int nWaveformType,
 			  float fSignalFrequency,
