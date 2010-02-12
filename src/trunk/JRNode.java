@@ -187,6 +187,11 @@ public abstract class JRNode extends AudioInputStream {
 		this.sessionID = sid;
 	}
 	
+	public void setPosition( float x, float y ) {
+		this.setX( x );
+		this.setY( y );
+	}
+	
 	public void setX ( float x ) { this.xpos = x; }
 	public void setY ( float y ) { this.ypos = y; }	
 	

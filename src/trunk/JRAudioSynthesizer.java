@@ -32,10 +32,8 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 	
 	// halt() - cease execution.  causes run() to shut down
 	public void stopSynth() {
-		synchronized(this) {
-			System.out.println("DEBUG: JRAudioSynthesizer: stopSynth()");
-			this.stopSynth = true;
-		}
+		System.out.println("DEBUG: JRAudioSynthesizer: stopSynth()");
+		this.stopSynth = true;
 	}
 	
 
@@ -101,52 +99,56 @@ public class JRAudioSynthesizer implements Runnable, JRConManListener {
 		while ( !stopSynth ) {
 			// System.out.println( "DEBUG: JRAudioSynthesizer: is running (stopSynth = " + this.stopSynth + ") .." );
 			
-			// does the tree have a head?
-			JRNode head = this.jrTree.getHead();
+			/* Acquire an exclusive lock on the tree before reading it -Jared 2/11/10 */
+			synchronized(jrTree) {
 			
-			// if so, try to read from the head node
-			if ( head != null ) {
-				int	nRead = readFromNode( head );
-	
-				// -1 indicates end of input
-				if (nRead == -1) {
-					System.err.println("foobar");
-					System.exit(1);
-					/*try { Thread.sleep(33); }
-					catch (InterruptedException e) { 
-						System.err.println("JRAudioSynthesizer: Unexpected InterruptedException:" + e.getMessage());
-						break;
-					}	*/
-				}
-				else {
-					//System.out.println("IO: " + nRead + " read from head");
+				// does the tree have a head?
+				JRNode head = this.jrTree.getHead();
 				
-					// swap byte order to little endian, 
-					// because Jared's hardware is little endian
-					swapByteOrder( nRead );
+				// if so, try to read from the head node
+				if ( head != null ) {
+					int	nRead = readFromNode( head );
+		
+					// -1 indicates end of input
+					if (nRead == -1) {
+						System.err.println("foobar");
+						System.exit(1);
+						/*try { Thread.sleep(33); }
+						catch (InterruptedException e) { 
+							System.err.println("JRAudioSynthesizer: Unexpected InterruptedException:" + e.getMessage());
+							break;
+						}	*/
+					}
+					else {
+						//System.out.println("IO: " + nRead + " read from head");
 					
-					// write to the line
-					writeToLine( nRead );
+						// swap byte order to little endian, 
+						// because Jared's hardware is little endian
+						swapByteOrder( nRead );
+						
+						// write to the line
+						writeToLine( nRead );
+						
+						// start the line if it is not active
+						if ( ! line.isRunning() ) { 
+							System.out.println( "DEBUG: JRAudioSynthesizer: Line started (was not running)" );
+							line.start(); 
+							}
+					}
 					
-					// start the line if it is not active
-					if ( ! line.isRunning() ) { 
-						System.out.println( "DEBUG: JRAudioSynthesizer: Line started (was not running)" );
-						line.start(); 
-						}
-				}
-				
-			} // end if ( head != null )
+				} // end if ( head != null )
+			
+			} // end synchronized(jrTree)
 			
 			// Because there is no head yet, we sleep() 
 			// Note that sleep()ing instead of yield()ing massively reduces CPU useage
+			/* sleep() makes the thread give up the processor and does not allow it to
+			run until the amount of time specified has passed -Jared 2/11/10 */
 			try { Thread.sleep(33); }
 			catch (InterruptedException e) { 
 				System.err.println("JRAudioSynthesizer: Caught unexpected interrupt:" + e.getMessage());
 				break;
 			}
-			
-			synchronized(this) {
-			} // lock
 		} // while
 		
 	
