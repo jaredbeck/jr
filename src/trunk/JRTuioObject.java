@@ -39,11 +39,11 @@ public class JRTuioObject extends TuioObject {
 
 	public void update(TuioObject tobj) {
 		
-		float dx = tobj.getX() - xpos;
+		/* float dx = tobj.getX() - xpos;
 		float dy = tobj.getY() - ypos;
 		float da = tobj.getAngle() - angle;
 
-		/* if ((dx!=0) || (dy!=0)) {
+		if ((dx!=0) || (dy!=0)) {
 			AffineTransform trans = AffineTransform.getTranslateInstance(dx,dy);
 			square = trans.createTransformedShape(square);
 		}
