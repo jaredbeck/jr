@@ -16,11 +16,11 @@ public class JaredReactable implements IApp {
 		modules, and edges are the patch cables. */
 		this.jrTree = new JRTree();
 		
-		// JRTuioClient listens for OSC messages and creates
-		// TUIO events, which JRConnectionManager listens for.
-		// When the connection manager receives a TUIO event,
-		// it will update the tree accordingly.
+		// JRTuioClient listens for OSC messages and creates TUIO events
 		this.jrTuioClient = new JRTuioClient();
+		
+		/* JRConnectionManager listens for TUIO events, and updates the tree
+		accordingly. */
 		this.jrConnectionManager = new JRConnectionManager( this.jrTree );
 		this.jrTuioClient.addTuioListener( jrConnectionManager );
 		
